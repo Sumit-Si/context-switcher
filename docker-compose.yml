@@ -1,0 +1,16 @@
+services:
+  db:
+    image: mongo:alpine
+    restart: always
+    container_name: context-switcher
+    ports: 
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: context-switcher-db
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
