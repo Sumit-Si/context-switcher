@@ -10,8 +10,8 @@ const app = express();
 app.use(helmet());  // secures your Express app by setting HTTP security headers
 app.use(cors({
     origin: [
-        "http://localhost:3000",
-        "http://localhost:3001"
+        "http://localhost:5173",
+        "http://localhost:5174"
     ],
     credentials: true,
 }));
@@ -25,5 +25,12 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(cookieParser());
 
+// Custom routes
+import healthCheckRouter from "./routes/healthCheck.routes";
+import globalErrorHandler from "./utils/globalErrorHandler";
+
+app.use("/api/v1/heathCheck", healthCheckRouter);
+
+app.use(globalErrorHandler);
 
 export default app;
