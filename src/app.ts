@@ -3,16 +3,14 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
+import { WHITELIST_ORIGINS } from "./constants";
 
 const app = express();
 
 // middleware
 app.use(helmet());  // secures your Express app by setting HTTP security headers
 app.use(cors({
-    origin: [
-        "http://localhost:5173",
-        "http://localhost:5174"
-    ],
+    origin: WHITELIST_ORIGINS,
     credentials: true,
 }));
 
