@@ -32,4 +32,47 @@ const registerUserPostValidator = z.object({
     .trim(),
 });
 
-export { registerUserPostValidator };
+// TODO: Add email verification validator
+// const emailVerifyGetValidator = z.object({
+//   token: z.string()
+//     .nonempty("Token is required")
+//     .trim(),
+// })
+
+const loginUserPostValidator = z.object({
+  email: z
+    .email()
+    .nonempty("Email is required")
+    .max(100, "Email must be at most 100 characters long")
+    .lowercase("Email must be in lowercase")
+    .trim(),
+
+  password: z
+    .string()
+    .nonempty("Password is required")
+    .min(8, "Password must be at least 8 characters long")
+    .max(20, "Password must be at most 20 characters long")
+    .trim(),
+});
+
+const forgotPasswordPostValidator = z.object({
+  email: z.email()
+    .nonempty("Email is required")
+    .max(100, "Email must be at most 100 characters long")
+    .lowercase("Email must be in lowercase")
+    .trim(),
+});
+
+const resetPasswordPostValidator = z.object({
+  password: z.string()
+    .nonempty("Password is required")
+    .min(8, "Password must be at least 8 characters long")
+    .max(20, "Password must be at most 20 characters long")
+    .regex(/[a-z]/, "Must contain lowercase")
+    .regex(/[A-Z]/, "Must contain uppercase")
+    .regex(/\d/, "Must contain number")
+    .regex(/[!@#$%&]/, "Must contain special character")
+    .trim(),
+})
+
+export { registerUserPostValidator, loginUserPostValidator,forgotPasswordPostValidator, resetPasswordPostValidator };

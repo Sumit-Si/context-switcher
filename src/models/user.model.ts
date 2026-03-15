@@ -30,6 +30,7 @@ export type UserSchemaProps = {
   deletedAt?: Date | null;
   generateAccessToken: () => string;
   generateRefreshToken: () => string;
+  isPasswordCorrect: (password: string) => Promise<boolean>;
 };
 
 const userSchema = new Schema<UserSchemaProps>(
