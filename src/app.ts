@@ -33,7 +33,7 @@ import authRouter from "./routes/auth.routes";
 import globalErrorHandler from "./utils/globalErrorHandler";
 
 app.use("/api/v1/healthCheck", healthCheckRouter);
-app.use("/api/v1/users", authRouter);
+app.use("/api/v1/auth", authRouter);
 
 app.use(globalErrorHandler);
 

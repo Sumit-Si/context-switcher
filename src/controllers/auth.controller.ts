@@ -16,6 +16,7 @@ import config from "../config/config";
 import { generateAccessAndRefreshToken } from "../utils/tokenUtils";
 import jwt from "jsonwebtoken";
 import { DecodedJWTPayload } from "../middlewares/auth.middleware";
+import { UserDocument } from "../types/common.types";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body as CreateUserRequestBodyProps;
@@ -149,14 +150,17 @@ const loginUser = asyncHandler(async (req, res) => {
   const cookieOptions: CookieOptions = {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
   };
 
   const loggedInUser = await User.findById(user._id).select(
     "_id username email isEmailVerified",
   );
 
-  res.status(200).json(
+  res.status(200)
+  .cookie("accessToken", accessToken, {...cookieOptions, maxAge: 24 * 60 * 60 * 1000})
+  .cookie("refreshToken", refreshToken, {...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000})
+  .json(
     new ApiResponse({
       statusCode: 200,
       data: {
@@ -184,7 +188,7 @@ const logout = asyncHandler(async (req, res) => {
   const cookieOptions: CookieOptions = {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
   };
 
   res.cookie("accessToken", "");
@@ -230,7 +234,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const cookieOptions: CookieOptions = {
       httpOnly: true,
       secure: config.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "strict",
     };
 
     res.status(200).json(
@@ -329,6 +333,32 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 });
 
+// OAuth
+const loginWithGoogle = asyncHandler(async (req, res) => {
+  try {
+    const user = req.user as UserDocument;
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+    console.log("access and refresh token", accessToken, refreshToken);
+
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: config.NODE_ENV === "production",
+      sameSite: "strict",
+    }
+
+    res.cookie("accessToken", accessToken, {...cookieOptions, maxAge: 24 * 60 * 60 * 1000});
+    res.cookie("refreshToken", refreshToken, {...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000});
+
+    res.redirect(`${process.env.CLIENT_URL}/dashboard}
+`);
+
+  } catch (error) {
+    console.error('OAuth error:', error);
+      res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
+  }
+});
+
 export {
   registerUser,
   verifyEmail,
@@ -338,4 +368,5 @@ export {
   refreshAccessToken,
   forgotPassword,
   resetPassword,
+  loginWithGoogle,
 };

@@ -14,6 +14,9 @@ const config = {
   EMAIL_USER: process.env.EMAIL_USER as string,
   EMAIL_PASS: process.env.EMAIL_PASS as string,
   CLIENT_URL: process.env.CLIENT_URL as string,
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID as string,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string,
+  GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL as string,
 };
 
 export default config;
