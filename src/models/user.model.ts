@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
 
 export type PreferenceProps = {
-  theme: ["light", "dark"];
+  theme: "light" | "dark";
   workStartHour: number;
   workEndHour: number;
   notifications: boolean;
@@ -51,7 +51,9 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function (this: UserSchemaProps) {
+        return this.authProvider === "local";
+      },
       trim: true,
       min: [8, "Password must be at least 8 characters long"],
       max: [20, "Password must be at most 20 characters long"],
@@ -92,8 +94,8 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     preferences: {
       theme: { type: String, default: "light" },
-      workStartHour: { type: String, default: 9 },
-      workEndHour: { type: String, default: 18 },
+      workStartHour: { type: Number, default: 9 },
+      workEndHour: { type: Number, default: 18 },
       notifications: { type: Boolean, default: true },
       defaultRitual: { type: String, default: "brain-dump" },
     },
@@ -115,14 +117,12 @@ userSchema.pre("save", async function () {
 });
 
 userSchema.methods.isPasswordCorrect = async function (
-  password: string,
+  password: string
 ): Promise<boolean> {
   return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateAccessToken = function () {
-  console.log("accessTokenSec: ", config.ACCESS_TOKEN_SECRET);
-  console.log("accessTokenExpiry: ", config.ACCESS_TOKEN_EXPIRY);
 
   const secret: Secret = config.ACCESS_TOKEN_SECRET;
   const expiresIn = config.ACCESS_TOKEN_EXPIRY as SignOptions["expiresIn"];

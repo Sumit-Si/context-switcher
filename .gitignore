@@ -129,6 +129,8 @@ dist
 # pnpm
 .pnpm-store
 
+*.md.resolved
+
 # yarn v3
 .pnp.*
 .yarn/*

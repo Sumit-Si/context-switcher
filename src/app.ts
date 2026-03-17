@@ -4,6 +4,8 @@ import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import { WHITELIST_ORIGINS } from "./constants";
+import { globalLimiter } from "./config/rateLimiter";
+import "./config/passport";
 
 const app = express();
 
@@ -26,6 +28,8 @@ app.use(
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(cookieParser());
+
+app.use(globalLimiter);
 
 // Custom routes
 import healthCheckRouter from "./routes/healthCheck.routes";

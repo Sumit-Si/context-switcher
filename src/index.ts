@@ -2,7 +2,7 @@ import app from "./app";
 import config from "./config/config";
 import dbConnect from "./config/db";
 
-const PORT = config.PORT || 4000;
+const PORT = config.PORT;
 
 dbConnect()
   .then(() => {

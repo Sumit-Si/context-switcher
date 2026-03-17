@@ -16,7 +16,7 @@ export interface DecodedJWTPayload extends JwtPayload {
 
 const verifyJWT = asyncHandler(async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    const token = req.cookies?.accessToken|| req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       throw new ApiError({ statusCode: 401, message: "Unauthorized" });
@@ -28,7 +28,7 @@ const verifyJWT = asyncHandler(async (req, res, next) => {
     ) as DecodedJWTPayload;
 
     const user = await User.findById(decoded._id).select(
-      "-password -refreshToken",
+      "-password",
     );
 
     if (!user) {

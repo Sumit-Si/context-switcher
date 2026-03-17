@@ -4,7 +4,7 @@ import User from "../models/user.model";
 import config from "./config";
 
 
-const passportInstance = passport.use(new GoogleStrategy({
+passport.use(new GoogleStrategy({
     clientID: config.GOOGLE_CLIENT_ID,
     clientSecret: config.GOOGLE_CLIENT_SECRET,
     callbackURL: config.GOOGLE_CALLBACK_URL,
@@ -43,5 +43,3 @@ const passportInstance = passport.use(new GoogleStrategy({
         return done(error as Error);
     }
 }));
-
-export default passportInstance;

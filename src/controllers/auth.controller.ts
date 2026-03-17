@@ -38,22 +38,26 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
   });
 
-  if (!user) {
+  const registeredUser = await User.findById(user._id)
+    .select("_id username email isEmailVerified");
+
+  if (!registeredUser) {
     throw new ApiError({
       statusCode: 400,
       message: "Problem while creating user",
     });
   }
 
-  const verifyToken = crypto.randomBytes(32).toString("hex");
-  console.log("verifyToken", verifyToken);
+  const rawVerifyToken = crypto.randomBytes(32).toString("hex");
+  const hashedVerifyToken = crypto.createHash("sha256").update(rawVerifyToken).digest("hex");
+  console.log("verifyToken", rawVerifyToken);
 
-  user.emailVerifyToken = verifyToken;
+  user.emailVerifyToken = hashedVerifyToken;
   user.emailVerifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
   await user.save();
 
   // send mail
-  await sendVerificationEmail(user, verifyToken);
+  await sendVerificationEmail(user, rawVerifyToken);
 
   res.status(201).json(
     new ApiResponse({
@@ -75,8 +79,9 @@ const verifyEmail = asyncHandler(async (req, res) => {
   }
 
   try {
+    const hashedVerifyToken = crypto.createHash("sha256").update(token).digest("hex");
     const user = await User.findOne({
-      emailVerifyToken: token,
+      emailVerifyToken: hashedVerifyToken,
       emailVerifyExpiry: { $gt: Date.now() }, // not expired
     }).select("-password");
 
@@ -118,7 +123,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({
     email,
-  }).select("email isEmailVerified _id");
+  }).select("email password isEmailVerified _id");
 
   if (!user) {
     throw new ApiError({
@@ -150,7 +155,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const cookieOptions: CookieOptions = {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
   };
 
   const loggedInUser = await User.findById(user._id).select(
@@ -158,19 +163,19 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   res.status(200)
-  .cookie("accessToken", accessToken, {...cookieOptions, maxAge: 24 * 60 * 60 * 1000})
-  .cookie("refreshToken", refreshToken, {...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000})
-  .json(
-    new ApiResponse({
-      statusCode: 200,
-      data: {
-        accessToken,
-        refreshToken,
-        loggedInUser,
-      },
-      message: "User logged in successfully",
-    }),
-  );
+    .cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 24 * 60 * 60 * 1000 })
+    .cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
+    .json(
+      new ApiResponse({
+        statusCode: 200,
+        data: {
+          accessToken,
+          refreshToken,
+          loggedInUser,
+        },
+        message: "User logged in successfully",
+      }),
+    );
 });
 
 const profile = asyncHandler(async (req, res) => {
@@ -185,14 +190,20 @@ const profile = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler(async (req, res) => {
+  const user = req.user as UserDocument;
+
   const cookieOptions: CookieOptions = {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
   };
 
-  res.cookie("accessToken", "");
-  res.cookie("refreshToken", "");
+  await User.findByIdAndUpdate(user._id, {
+    refreshToken: "",
+  });
+
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 
   res.status(200).json(
     new ApiResponse({
@@ -234,19 +245,22 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const cookieOptions: CookieOptions = {
       httpOnly: true,
       secure: config.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
     };
 
-    res.status(200).json(
-      new ApiResponse({
-        statusCode: 200,
-        message: "Access token refreshed successfully",
-        data: {
-          accessToken,
-          refreshToken: newRefreshToken,
-        },
-      }),
-    );
+    res.status(200)
+      .cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 24 * 60 * 60 * 1000 })
+      .cookie("refreshToken", newRefreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
+      .json(
+        new ApiResponse({
+          statusCode: 200,
+          message: "Access token refreshed successfully",
+          data: {
+            accessToken,
+            refreshToken: newRefreshToken,
+          },
+        }),
+      );
   } catch (error) {
     throw new ApiError({
       statusCode: 500,
@@ -270,20 +284,21 @@ const forgotPassword = asyncHandler(async (req, res) => {
       });
     }
 
-    const token = crypto.randomBytes(32).toString("hex");
-    console.log("Token", token);
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    console.log("Token", hashedToken);
     const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    user.passwordResetToken = token;
+    user.passwordResetToken = hashedToken;
     user.passwordResetExpiry = tokenExpiry;
     await user.save();
 
-    await sendPasswordResetEmail(user, token);
+    await sendPasswordResetEmail(user, rawToken);
 
     res.status(200).json(
       new ApiResponse({
         statusCode: 200,
-        message: "Password reset mail",
+        message: "Password reset mail sent successfully",
         data: null,
       }),
     );
@@ -300,8 +315,10 @@ const resetPassword = asyncHandler(async (req, res) => {
   const { password: newPassword } = req.body as { password: string };
 
   try {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
     const user = await User.findOne({
-      passwordResetToken: token,
+      passwordResetToken: hashedToken,
       passwordResetExpiry: { $gt: Date.now() },
     });
 
@@ -317,6 +334,15 @@ const resetPassword = asyncHandler(async (req, res) => {
     user.passwordResetExpiry = undefined;
     user.refreshToken = ""; // revoke sessions after reset
     await user.save();
+
+    const cookieOptions: CookieOptions = {
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+    sameSite: "lax",
+  };
+
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
 
     res.status(200).json(
       new ApiResponse({
@@ -344,18 +370,17 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
     const cookieOptions: CookieOptions = {
       httpOnly: true,
       secure: config.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
     }
 
-    res.cookie("accessToken", accessToken, {...cookieOptions, maxAge: 24 * 60 * 60 * 1000});
-    res.cookie("refreshToken", refreshToken, {...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000});
+    res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 24 * 60 * 60 * 1000 });
+    res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
-    res.redirect(`${process.env.CLIENT_URL}/dashboard}
-`);
+    res.redirect(`${config.CLIENT_URL}/dashboard`);
 
   } catch (error) {
     console.error('OAuth error:', error);
-      res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
+    res.redirect(`${config.CLIENT_URL}/login?error=oauth_failed`);
   }
 });
 
