@@ -4,22 +4,37 @@ import util from "util";
 import config from "./config";
 import path from "path";
 import * as sourceMapSupport from "source-map-support";
+import { blue, green, magenta, red, yellow } from "colorette";
 
 
 // Linking source map support
 sourceMapSupport.install();
 
+const colorizeLevel = (level: string) => {
+    switch (level) {
+        case "ERROR":
+            return red(level);
+        case "INFO":
+            return blue(level);
+        case "WARN":
+            return yellow(level);
+        default:
+            return level;
+    }
+}
+
 const consoleLogFormat = format.printf((info) => {
     const { level, message, timestamp, meta = {} } = info;
-    const customLevel = level.toUpperCase();
-    const customTimestamp = timestamp;
+    const customLevel = colorizeLevel(level.toUpperCase());
+    const customTimestamp = green(timestamp as string);
     const customMessage = message;
     const customMeta = util.inspect(meta, {
         showHidden: false,
         depth: null,
+        colors: true,
     });
 
-    const customLog = `${customLevel} [${customTimestamp}] ${customMessage}\n${"META"} ${customMeta}\n`;
+    const customLog = `${customLevel} [${customTimestamp}] ${customMessage}\n${magenta("META")} ${customMeta}\n`;
 
     return customLog;
 })

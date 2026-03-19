@@ -8,7 +8,7 @@ const PORT = config.PORT;
 dbConnect()
   .then(() => {
     app.listen(PORT, () => {
-      console.log("Connected ✅");
+      logger.info("DB_CONNECTED ✅");
       // console.log(`Server is running at PORT:${PORT}`);
       logger.info("SERVER_STARTED", {
         meta: {
