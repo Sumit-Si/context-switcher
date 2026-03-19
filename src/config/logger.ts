@@ -3,7 +3,11 @@ import { ConsoleTransportInstance, FileTransportInstance } from "winston/lib/win
 import util from "util";
 import config from "./config";
 import path from "path";
+import * as sourceMapSupport from "source-map-support";
 
+
+// Linking source map support
+sourceMapSupport.install();
 
 const consoleLogFormat = format.printf((info) => {
     const { level, message, timestamp, meta = {} } = info;
