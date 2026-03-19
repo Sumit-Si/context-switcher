@@ -52,6 +52,9 @@ const envSchema = z.object({
   CLIENT_URL: z
     .url({error: "CLIENT_URL must be a valid URL"}),
 
+  SERVER_URL: z
+    .url({error: "SERVER_URL must be a valid URL"}),
+
   GOOGLE_CLIENT_ID: z
     .string({ error: "GOOGLE_CLIENT_ID is required" })
     .min(1, "GOOGLE_CLIENT_ID cannot be empty"),
