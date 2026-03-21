@@ -50,6 +50,7 @@
     "nodemailer": "^8.0.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "rate-limiter-flexible": "^10.0.1",
     "source-map-support": "^0.5.21",
     "ts-migrate-mongoose": "^5.2.0",
     "winston": "^3.19.0",

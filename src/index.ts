@@ -2,14 +2,23 @@ import app from "./app";
 import config from "./config/config";
 import dbConnect from "./config/db";
 import logger from "./config/logger";
+import { initRateLimiter } from "./config/rateLimiter";
 
 const PORT = config.PORT;
 
 dbConnect()
-  .then(() => {
+  .then(({connection}) => {
     app.listen(PORT, () => {
-      logger.info("DB_CONNECTED ✅");
+      logger.info("DB_CONNECTED ✅", {
+        meta: {
+          CONNECTION_NAME: connection.name,
+        }
+      });
       // console.log(`Server is running at PORT:${PORT}`);
+
+      initRateLimiter(connection);
+      logger.info("RATE_LIMITER_INITIALIZED ✅");
+
       logger.info("SERVER_STARTED", {
         meta: {
           PORT: config.PORT,

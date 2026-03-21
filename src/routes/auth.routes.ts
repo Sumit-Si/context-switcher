@@ -20,6 +20,7 @@ import {
 import { verifyJWT } from "../middlewares/auth.middleware";
 import passport from "passport";
 import { authLimiter } from "../config/rateLimiter";
+import { rateLimit } from "../middlewares/rateLimit.middleware";
 
 const router = Router();
 
@@ -32,7 +33,7 @@ router
 router.route("/verify-email").get(verifyEmail);
 
 // login user
-router.route("/login").post(authLimiter, validate(loginUserPostValidator), loginUser);
+router.route("/login").post(rateLimit, validate(loginUserPostValidator), loginUser);
 
 // logout user
 router.route("/logout").post(verifyJWT, logout);

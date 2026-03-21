@@ -1,4 +1,20 @@
 import { rateLimit } from "express-rate-limit";
+import { Connection } from "mongoose";
+import { RateLimiterMongo } from "rate-limiter-flexible";
+
+
+// Rate-Limiter-Flexible
+let rateLimiterMongo: null | RateLimiterMongo = null;
+const POINTS: number = 10;  // no. of requests allowed
+const DURATION: number = 60; // duration in seconds
+
+const initRateLimiter = (mongooseConnection: Connection) => {
+    rateLimiterMongo = new RateLimiterMongo({
+        storeClient: mongooseConnection,
+        points: POINTS, 
+        duration: DURATION,
+    })
+}
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -20,4 +36,6 @@ const globalLimiter = rateLimit({
 export {
     authLimiter,
     globalLimiter,
+    initRateLimiter,
+    rateLimiterMongo,
 }
