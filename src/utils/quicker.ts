@@ -1,6 +1,5 @@
 import os from "os";
 import config from "../config/config";
-import { memoryUsage } from "process";
 
 
 const getSystemHealth = () => {
