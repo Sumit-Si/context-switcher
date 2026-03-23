@@ -7,7 +7,9 @@ const migrationName = process.argv[3];
 // Valid migration commands
 const validCommands = ["create", "up", "down", "list", "prune"];
 if (!validCommands.includes(command)) {
-  console.error(`Invalid command: Command must be one of ${validCommands.join(', ')}`);
+  console.error(
+    `Invalid command: Command must be one of ${validCommands.join(", ")}`,
+  );
   process.exit(1);
 }
 
