@@ -22,11 +22,11 @@ const contextSchema = new Schema<ContextSchemaProps>({
         type: String,
         required: true,
         trim: true,
-        minlength: [3, "Name must be at least 3 characters long"],
-        maxlength: [50, "Name must be at most 50 characters long"],
+        minLength: [3, "Name must be at least 3 characters long"],
+        maxLength: [50, "Name must be at most 50 characters long"],
     },
     userId: {
-        type: Types.ObjectId,
+        type: Schema.Types.ObjectId,
         required: true,
         ref: "User",
     },
@@ -49,8 +49,8 @@ const contextSchema = new Schema<ContextSchemaProps>({
     cognitiveLoad: {
         type: Number,
         required: [true, "Cognitive load is required"],
-        min: [1, "Cognitive load must be at least 1"],
-        max: [10, "Cognitive load must be at most 10"],
+        minLength: [1, "Cognitive load must be at least 1"],
+        maxLength: [10, "Cognitive load must be at most 10"],
     },
     emotionalTone: {
         type: String,
