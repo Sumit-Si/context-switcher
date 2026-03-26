@@ -28,3 +28,25 @@ export const EnergyLevelEnum = {
 } as const;
 
 export const AvailableEnergyLevels = Object.values(EnergyLevelEnum) as readonly EnergyLevel[];
+
+// Ritual Constants
+export type RitualType = "custom" | "template";
+
+export const RitualTypeEnum = {
+  CUSTOM: "custom",
+  TEMPLATE: "template",
+} as const;
+
+export const AvailableRitualTypes = Object.values(RitualTypeEnum) as readonly RitualType[];
+
+export type StepType = "breathe" | "braindump" | "move" | "intention" | "pause";
+
+export const StepTypeEnum = {
+  BREATHE: "breathe",
+  BRAINDUMP: "braindump",
+  MOVE: "move",
+  INTENTION: "intention",
+  PAUSE: "pause",
+} as const;
+
+export const AvailableStepTypes = Object.values(StepTypeEnum) as readonly StepType[];

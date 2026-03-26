@@ -35,11 +35,13 @@ app.use(globalLimiter);
 import healthCheckRouter from "./routes/healthCheck.routes";
 import authRouter from "./routes/auth.routes";
 import contextRouter from "./routes/context.routes";
+import ritualRouter from "./routes/ritual.routes";
 import globalErrorHandler from "./utils/globalErrorHandler";
 
 app.use("/api/v1/healthCheck", healthCheckRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/contexts", contextRouter);
+app.use("/api/v1/rituals", ritualRouter);
 
 app.use(globalErrorHandler);
 

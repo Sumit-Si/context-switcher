@@ -144,4 +144,13 @@ const updateContextPutValidator = z.object({
     .trim(),
 })
 
-export { registerUserPostValidator, loginUserPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPutValidator };
+// Ritual Validators
+const createRitualPostValidator = z.object({
+
+});
+
+const updateRitualPutValidator = z.object({
+
+});
+
+export { registerUserPostValidator, loginUserPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPutValidator, createRitualPostValidator, updateRitualPutValidator };
