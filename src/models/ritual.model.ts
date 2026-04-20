@@ -75,6 +75,8 @@ const ritualSchema = new Schema<RitualSchemaProps>({
         type: Date,
         default: null,
     }
+}, {
+    timestamps: true,
 });
 
 ritualSchema.index({ userId: 1, name: 1 }, { unique: true });

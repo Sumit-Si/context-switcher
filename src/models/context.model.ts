@@ -72,6 +72,10 @@ const contextSchema = new Schema<ContextSchemaProps>({
         trim: true,
         maxlength: [200, "Environment note must be at most 200 characters long"],
     },
+    deletedAt: {
+        type: Date,
+        default: null,
+    },
     isDefault: {
         type: Boolean,
         default: false,

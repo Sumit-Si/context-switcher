@@ -130,6 +130,9 @@ dist
 .pnpm-store
 
 *.md.resolved
+*roadmap.md
+*.zip
+context-switcher-docs
 
 # yarn v3
 .pnp.*
