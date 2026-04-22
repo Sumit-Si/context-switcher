@@ -1,4 +1,6 @@
 import z from "zod";
+import { AvailableRitualTypes, AvailableStepTypes, RitualTypeEnum, StepTypeEnum } from "../constants";
+import { Types } from "mongoose";
 
 const registerUserPostValidator = z.object({
   username: z
@@ -146,11 +148,140 @@ const updateContextPutValidator = z.object({
 
 // Ritual Validators
 const createRitualPostValidator = z.object({
+  name: z.string()
+    .nonempty("Name is required")
+    .min(2, "Name must be at least 2 characters long")
+    .max(50, "Name must be at most 50 characters long")
+    .trim(),
+
+  description: z.string()
+    .max(1000, "Description must be at most 500 characters long")
+    .optional(),
+
+  ritualType: z.enum(AvailableRitualTypes)
+    .default(RitualTypeEnum.CUSTOM),
+
+  totalDuration: z.number()
+    .min(1, "Duration must be at least 1 second"),
+
+  steps: z.array(
+    z.object({
+      type: z.enum(AvailableStepTypes)
+        .default(StepTypeEnum.BRAINDUMP),
+
+      duration: z.number()
+        .min(1, "Duration must be at least 1 second"),
+
+      prompt: z.string()
+        .min(1, "Prompt must be at least 1 characters long")
+        .max(500, "Prompt must be at most 500 characters long")
+        .trim(),
+
+      audioFile: z.url()
+        .trim()
+        .optional()
+      ,
+    })
+  ),
+
+  targetTransition: z.object({
+    fromContext: z.string()
+      .nonempty("From context is required")
+      .min(1, "From context must be at least 1 character long")
+      .trim(),
+
+    toContext: z.string()
+      .nonempty("To context is required")
+      .min(1, "To context must be at least 1 character long")
+      .trim(),
+  })
 
 });
 
 const updateRitualPutValidator = z.object({
+  name: z.string()
+    .min(2, "Name must be at least 2 characters long")
+    .max(50, "Name must be at most 50 characters long")
+    .trim()
+    .optional(),
 
+  description: z.string()
+    .max(1000, "Description must be at most 1000 characters long")
+    .trim()
+    .optional(),
+
+  steps: z.array(
+    z.object({
+      type: z.enum(AvailableStepTypes),
+      duration: z.number()
+        .min(1, "Duration must be at least 1 second"),
+      prompt: z.string()
+        .min(1, "Prompt must be at least 1 characters long")
+        .max(500, "Prompt must be at most 500 characters long")
+        .trim(),
+      audioFile: z.url()
+        .optional(),
+    })
+  ).min(1).optional(),
 });
 
-export { registerUserPostValidator, loginUserPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPutValidator, createRitualPostValidator, updateRitualPutValidator };
+// SwitchLog Validators
+const createSwitchLogPostValidator = z.object({
+  fromContext: z.string()
+    .nonempty("From context is required")
+    .refine(Types.ObjectId.isValid, {
+      message: "Invalid fromContext id",
+    })
+    .trim(),
+
+  toContext: z.string()
+    .nonempty("To context is required")
+    .refine(Types.ObjectId.isValid, {
+      message: "Invalid toContext id",
+    })
+    .trim(),
+
+  ritualId: z.string()
+    .refine(Types.ObjectId.isValid, {
+      message: "Invalid ritualId id",
+    })
+    .optional(),
+
+  ritualCompleted: z.boolean()
+    .default(false),
+
+  ritualSkipped: z.boolean()
+    .default(false),
+
+  distraction: z.string()
+    .max(200, "Distraction must be at most 200 characters long")
+    .optional(),
+
+  notes: z.string()
+    .max(500, "Notes must be at most 500 characters long")
+    .optional(),
+
+  projectTag: z.string()
+    .max(50, "Project Tag must be at most 50 characters long")
+    .optional(),
+});
+
+const updateSwitchLogPatchValidator = z.object({
+  distraction: z.string()
+    .max(200, "Distraction must be at most 200 characters long")
+    .optional(),
+
+  notes: z.string()
+    .max(500, "Notes must be at most 500 characters long")
+    .optional(),
+
+  projectTag: z.string()
+    .max(50, "Project Tag must be at most 50 characters long")
+    .optional(),
+    
+  focusQuality: z.number()
+    .min(1, "Focus Quality must be at least 1")
+    .optional(),
+});
+
+export { registerUserPostValidator, loginUserPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPutValidator, createRitualPostValidator, updateRitualPutValidator, createSwitchLogPostValidator, updateSwitchLogPatchValidator };
