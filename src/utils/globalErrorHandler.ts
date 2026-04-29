@@ -82,6 +82,7 @@ const globalErrorHandler = (
     res.status(error.statusCode).json({
       success: false,
       statusCode: error.statusCode,
+      code: error.code,
       message: isProd && error.statusCode >= 500
         ? "Something went wrong"
         : error.message,

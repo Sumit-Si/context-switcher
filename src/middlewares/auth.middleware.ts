@@ -41,6 +41,7 @@ const verifyJWT = asyncHandler(async (req, res, next) => {
     if (error instanceof TokenExpiredError) {
       throw new ApiError({
         statusCode: 401,
+        code: "TOKEN_EXPIRED",
         message: "Access token expired, request a new one with refresh token",
       });
     }
