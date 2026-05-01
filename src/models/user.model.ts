@@ -24,6 +24,8 @@ export type UserSchemaProps = {
   emailVerifyExpiry?: Date | null;
   passwordResetToken?: string;
   passwordResetExpiry?: Date | null;
+  verificationResendCount: number;
+  verificationResendAt: Date | null;
   googleId?: string;
   authProvider: AuthProviderProps;
   preferences: PreferenceProps;
@@ -63,6 +65,7 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     refreshToken: {
       type: String,
+      select: false,  /// ← never returned unless explicitly requested
     },
     isEmailVerified: {
       type: Boolean,
@@ -70,17 +73,31 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     emailVerifyToken: {
       type: String,
+      select: false,
     },
     emailVerifyExpiry: {
       type: Date,
       default: null,
+      select: false,
     },
     passwordResetToken: {
       type: String,
+      select: false,
     },
     passwordResetExpiry: {
       type: Date,
       default: null,
+      select: false,
+    },
+    verificationResendCount: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    verificationResendAt: {
+      type: Date,
+      default: null,
+      select: false,
     },
     googleId: {
       type: String,

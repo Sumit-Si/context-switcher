@@ -13,7 +13,7 @@ import {
 } from "../utils/emailUtils";
 import { ApiResponse } from "../utils/ApiResponse";
 import config from "../config/config";
-import { generateAccessAndRefreshToken } from "../utils/tokenUtils";
+import { generateAccessAndRefreshToken, generateEmailVerifyToken } from "../utils/tokenUtils";
 import jwt from "jsonwebtoken";
 import { DecodedJWTPayload } from "../middlewares/auth.middleware";
 import { UserDocument } from "../types/common.types";
@@ -23,12 +23,13 @@ const registerUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body as CreateUserRequestBodyProps;
   // console.log(req.body);
   const existingUser = await User.findOne({
-    email,
+    $or: [{ email }, { username }],
   }).select("email username");
 
+  // 409 -> resource already exists
   if (existingUser) {
     throw new ApiError({
-      statusCode: 400,
+      statusCode: 409,
       message: "User already exists",
     });
   }
@@ -49,16 +50,15 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
-  const rawVerifyToken = crypto.randomBytes(32).toString("hex");
-  const hashedVerifyToken = crypto.createHash("sha256").update(rawVerifyToken).digest("hex");
-  console.log("verifyToken", rawVerifyToken);
+  const { rawToken, hashedToken, expiry } = generateEmailVerifyToken();
+  console.log("verifyToken", rawToken);
 
-  user.emailVerifyToken = hashedVerifyToken;
-  user.emailVerifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  user.emailVerifyToken = hashedToken;
+  user.emailVerifyExpiry = expiry;
   await user.save();
 
   // send mail
-  await sendVerificationEmail(user, rawVerifyToken);
+  await sendVerificationEmail(user, rawToken);
 
   res.status(201).json(
     new ApiResponse({
@@ -79,14 +79,17 @@ const verifyEmail = asyncHandler(async (req, res) => {
     });
   }
 
-  const hashedVerifyToken = crypto.createHash("sha256").update(token).digest("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
 
-  console.log("Hashed Token: ",hashedVerifyToken);
+  console.log("Hashed Token: ", hashedToken);
 
   const user = await User.findOne({
-    emailVerifyToken: hashedVerifyToken,
+    emailVerifyToken: hashedToken,
     emailVerifyExpiry: { $gt: Date.now() }, // not expired
-  }).select("-password -emailVerifyToken -emailVerifyExpiry");
+  }).select("-password +emailVerifyToken +emailVerifyExpiry");
 
   if (!user) {
     throw new ApiError({
@@ -113,9 +116,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
     );
 
     logger.info("Email verified successfully", {
-      userId: user._id.toString(),
-      email: user.email,
-      // requestId: req.headers["x-request-id"],
+      meta: {
+        userId: user._id.toString(),
+        email: user.email,
+        requestId: req.headers["x-request-id"],
+      }
+
     });
 
     res.status(200).json(
@@ -139,7 +145,85 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 const resendVerificationEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body as { email: string };
 
+  const user = await User.findOne({
+    email,
+  }).select("email username +emailVerifyToken +emailVerifyExpiry +verificationResendCount +verificationResendAt");
+
+  if (!user) {
+    return res.status(200).json(
+      new ApiResponse({
+        statusCode: 200,
+        message: "If that email exists, a verification link was sent.",
+        data: null,
+      })
+    );
+  }
+
+  if (user.isEmailVerified) {
+    throw new ApiError({
+      statusCode: 400,
+      message: "This email is already verified. Please login.",
+    });
+  }
+
+  // ✅ RATE LIMIT CHECK 1: 60 second cooldown per user
+  const COOLDOWN_MS = 60 * 1000;
+  if (
+    user.verificationResendAt &&
+    Date.now() - user.verificationResendAt.getTime() < COOLDOWN_MS
+  ) {
+    const secondsLeft = Math.ceil(
+      (COOLDOWN_MS - (Date.now() - user.verificationResendAt.getTime())) / 1000
+    );
+    throw new ApiError({
+      statusCode: 429,
+      message: `Please wait ${secondsLeft} seconds before requesting another email.`,
+    });
+  }
+
+  // ✅ RATE LIMIT CHECK 2: Max 5 resends total (abuse prevention)
+  const MAX_RESENDS = 5;
+  if (user.verificationResendCount >= MAX_RESENDS) {
+    throw new ApiError({
+      statusCode: 429,
+      message: "Maximum resend attempts reached. Please contact support.",
+    });
+  }
+
+  const { rawToken, hashedToken, expiry } = generateEmailVerifyToken();
+
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        emailVerifyToken: hashedToken,
+        emailVerifyExpiry: expiry, // 24 hours
+        verificationResendCount: user.verificationResendCount + 1,
+        verificationResendAt: new Date(),
+      },
+    }
+  );
+
+  await sendVerificationEmail(user, rawToken);
+
+  logger.info("Verification email resent", {
+    meta: {
+      userId: user._id.toString(),
+      email: user.email,
+      resendCount: user.verificationResendCount + 1,
+      requestId: req.headers["x-request-id"],
+    },
+  });
+
+  res.status(200).json(
+    new ApiResponse({
+      statusCode: 200,
+      message: "Verification email resent",
+      data: null,
+    })
+  );
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -195,8 +279,8 @@ const loginUser = asyncHandler(async (req, res) => {
       new ApiResponse({
         statusCode: 200,
         data: {
-          accessToken,
-          refreshToken,
+          // accessToken,
+          // refreshToken,
           loggedInUser,
         },
         message: "User logged in successfully",
@@ -345,10 +429,13 @@ const forgotPassword = asyncHandler(async (req, res) => {
     }).select("_id email");
 
     if (!user) {
-      throw new ApiError({
-        statusCode: 200,
-        message: "If that email exists, a reset link was sent.",
-      });
+      return res.status(200).json(
+        new ApiResponse({
+          statusCode: 200,
+          message: "If that email exists, a reset link was sent.",
+          data: null,
+        })
+      )
     }
 
     const rawToken = crypto.randomBytes(32).toString("hex");
@@ -431,6 +518,17 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
   try {
     const user = req.user as UserDocument;
 
+    if (!user) {
+      // This shouldn't happen (passport handles it) but guard anyway
+      logger.warn("Google OAuth: no user on req after passport", {
+        meta: {
+          ip: req.ip,
+          requestId: req.headers["x-request-id"],
+        }
+      });
+      return res.redirect(`${config.CLIENT_URL}/login?error=oauth_failed`);
+    }
+
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
     console.log("access and refresh token", accessToken, refreshToken);
 
@@ -440,13 +538,20 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
       sameSite: "lax",
     }
 
+    logger.info("Google OAuth login", {
+      meta: {
+        userId: user._id.toString(),
+        requestId: req.headers["x-request-id"],
+      }
+    });
+
     res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
     res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
     res.redirect(`${config.CLIENT_URL}/panel/dashboard`);
 
   } catch (error) {
-    console.error('OAuth error:', error);
+    // console.error('OAuth error:', error);
     res.redirect(`${config.CLIENT_URL}/login?error=oauth_failed`);
   }
 });
@@ -454,6 +559,7 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
 export {
   registerUser,
   verifyEmail,
+  resendVerificationEmail,
   loginUser,
   profile,
   logout,

@@ -47,18 +47,26 @@ const globalErrorHandler = (
 
   if (error instanceof ApiError) {
     if (error.statusCode >= 500) {
-      logger.error("Internal server error", logContext);
+      logger.error("Internal server error", {
+        meta: logContext,
+      });
     } else if (error.statusCode === 401 || error.statusCode === 403) {
-      logger.warn("Auth failure", { ...logContext, security: true });
+      logger.warn("Auth failure", {
+        meta: { ...logContext, security: true }
+      });
     } else if (error.statusCode >= 400) {
       // 400, 404, 422, 429, etc.
-      logger.warn("Client error", logContext);
+      logger.warn("Client error", {
+        meta: logContext,
+      });
       // Client errors aren't your bug — don't page anyone, just track them
     }
   } else {
     // Not an ApiError = completely unexpected. Unhandled promise rejection,
     // null reference, third-party library crash, etc.
-    logger.error("Unhandled exception", logContext);
+    logger.error("Unhandled exception", {
+      meta: logContext,
+    });
     // This is the scariest log — it means you didn't anticipate this error path
   }
 
