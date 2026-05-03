@@ -1,35 +1,50 @@
-import {v2 as cloudinary} from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 import config from "./config";
 import fs from "fs";
+import logger from "./logger";
 
 
 cloudinary.config({
-    cloud_name: config.CLOUDINARY_CLOUD_NAME,
-    api_key: config.CLOUDINARY_API_KEY,
-    api_secret: config.CLOUDINARY_API_SECRET,
+  cloud_name: config.CLOUDINARY_CLOUD_NAME,
+  api_key: config.CLOUDINARY_API_KEY,
+  api_secret: config.CLOUDINARY_API_SECRET,
 });
 
-const uploadOnCloudinary = async (localFilePath: string) => {
-    try {
-        if (!localFilePath) return null;
+const uploadOnCloudinary = async (localFilePath: string, folderName?: string) => {
+  if (!localFilePath) {
+    throw new Error("uploadOnCloudinary: localFilePath is required");
+  }
 
-        const response = await cloudinary.uploader.upload(localFilePath, {
-            resource_type: "auto",
-            folder: "context-switcher",
-        });
+  try {
+    const response = await cloudinary.uploader.upload(localFilePath, {
+      resource_type: "auto",
+      folder: folderName ?? "context-switcher",
+    });
 
-        console.log("file uploaded on cloudinary. File src", response.url);
+    logger.info("File uploaded to Cloudinary", {
+      meta: {
+        url: response.url,
+        publicId: response.public_id,
+      }
+    });
 
-        // once the file is uploaded, we would like to delete it from our server asynchronously
-        await fs.promises.unlink(localFilePath);
-        return response;
-    } catch (error) {
-        console.log("Cloudinary Error:", error);
-
-        if (fs.existsSync(localFilePath)) await fs.promises.unlink(localFilePath);
-        return null;
+    await fs.promises.unlink(localFilePath);
+    return response; // always has .url and .public_id
+  } catch (error) {
+    logger.error("Cloudinary upload failed", {
+      meta: {
+        localPath: localFilePath,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    });
+    // Clean up temp file even on failure
+    if (fs.existsSync(localFilePath)) {
+      await fs.promises.unlink(localFilePath);
     }
-}
+    throw error; // re-throw — let asyncHandler + globalErrorHandler log it properly
+  }
+};
+
 
 const deleteFromCloudinary = async (publicId: string) => {
   try {
@@ -37,12 +52,17 @@ const deleteFromCloudinary = async (publicId: string) => {
     console.log("Deleted from cloudinary. Public id", publicId);
     return response;
   } catch (error) {
-    console.log("Error deleting from cloudinary", error);
+    logger.error("Cloudinary delete failed", {
+      meta: {
+        publicId,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    });
     return null;
   }
 };
 
 export {
-    uploadOnCloudinary,
-    deleteFromCloudinary,
+  uploadOnCloudinary,
+  deleteFromCloudinary,
 }

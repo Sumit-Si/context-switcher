@@ -13,20 +13,21 @@ const storage = multer.diskStorage({
   },
   filename: function (_req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const fileName = `${uniqueSuffix}_${file.originalname}`;
-
-    cb(null, fileName);
+    // Use only the extension from originalname — never the full name
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeName = `${uniqueSuffix}${ext}`; // e.g., "1234567890-123456789.jpg"
+    cb(null, safeName);
   },
 });
 
 // File filter for images
-const imageFilter = (req: Request, file: Express.Multer.File, cb: any) => {
+const imageFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
   if (file.mimetype && allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Only image files are allowed!"), false);
+    cb(new Error("Only image files are allowed. Accepted: jpg, png, webp"));
   }
 };
 

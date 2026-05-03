@@ -4,6 +4,8 @@ export type UserDocument = {
   _id: Types.ObjectId;
   username: string;
   email: string;
+  avatar?: string;
+  avatarPublicId?: string;
 };
 
 export type GetRequestPayloads = {

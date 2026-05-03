@@ -10,6 +10,7 @@ import {
   resetPassword,
   loginWithGoogle,
   resendVerificationEmail,
+  updateProfile,
 } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate.middleware";
 import {
@@ -22,6 +23,7 @@ import { verifyJWT } from "../middlewares/auth.middleware";
 import passport from "passport";
 import { authLimiter } from "../config/rateLimiter";
 import { rateLimit } from "../middlewares/rateLimit.middleware";
+import { upload } from "../middlewares/multer.middleware";
 
 const router = Router();
 
@@ -49,6 +51,9 @@ router.route("/refresh-access-token").post(authLimiter, refreshAccessToken);
 
 // profile user
 router.route("/me").get(verifyJWT, profile);
+
+// update profile
+router.route("/update-profile").patch(verifyJWT, upload.single("avatar"), updateProfile);
 
 // forgot password
 router.route("/forgot-password").post(authLimiter, validate(forgotPasswordPostValidator), forgotPassword);

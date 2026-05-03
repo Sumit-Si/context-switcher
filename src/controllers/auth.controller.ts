@@ -3,6 +3,7 @@ import {
   CookieOptions,
   CreateUserRequestBodyProps,
   LoginUserRequestBodyProps,
+  UpdateProfileRequestBodyProps,
 } from "../types/auth.types";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/AsyncHandler";
@@ -18,6 +19,7 @@ import jwt from "jsonwebtoken";
 import { DecodedJWTPayload } from "../middlewares/auth.middleware";
 import { UserDocument } from "../types/common.types";
 import logger from "../config/logger";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../config/cloudinary";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body as CreateUserRequestBodyProps;
@@ -269,7 +271,7 @@ const loginUser = asyncHandler(async (req, res) => {
   };
 
   const loggedInUser = await User.findById(user._id).select(
-    "_id username email isEmailVerified createdAt",
+    "_id username email avatar isEmailVerified createdAt",
   );
 
   res.status(200)
@@ -296,6 +298,88 @@ const profile = asyncHandler(async (req, res) => {
       data: user,
       message: "User details fetched successfully",
     }),
+  );
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const { username, email } = req.body as UpdateProfileRequestBodyProps;
+  const user = req.user as UserDocument;
+
+  const avatarLocalFile = req.file as Express.Multer.File;
+
+  if (username !== user.username) {
+    const alreadyExists = await User.findOne({
+      username,
+    }).select("_id");
+
+    if (alreadyExists) {
+      throw new ApiError({
+        statusCode: 409,
+        message: "Username already exists",
+      });
+    }
+  }
+
+  if (email !== user.email) {
+    const alreadyExists = await User.findOne({
+      email,
+    }).select("_id");
+
+    if (alreadyExists) {
+      throw new ApiError({
+        statusCode: 409,
+        message: "Email already exists",
+      });
+    }
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (username) updateData.username = username;
+  if (email) updateData.email = email;
+
+  // ── Avatar upload ─────────────────────────────────────────────────────────
+  if (avatarLocalFile) {
+    // Delete old avatar from Cloudinary to avoid orphaned files
+    if (user.avatarPublicId) {
+      await deleteFromCloudinary(user.avatarPublicId);
+      // Non-fatal — log inside deleteFromCloudinary, continue with upload
+    }
+
+    const uploaded = await uploadOnCloudinary(
+      avatarLocalFile.path,
+      "context-switcher/avatars"
+    );
+
+    if (!uploaded?.url) {
+      throw new ApiError({
+        statusCode: 500,
+        message: "Image upload failed. Please try again.",
+      });
+    }
+
+    updateData.avatar = uploaded.url;
+    updateData.avatarPublicId = uploaded.public_id;
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(user._id,
+    updateData,
+    {
+      new: true, select: "_id username email avatar isEmailVerified createdAt"
+    }
+  );
+
+  logger.info("Profile updated", {
+    userId: user._id.toString(),
+    requestId: req.headers["x-request-id"],
+    fields: Object.keys(updateData), // log WHAT changed, not the values
+  });
+
+  res.status(200).json(
+    new ApiResponse({
+      statusCode: 200,
+      data: updatedUser,
+      message: "Profile updated successfully",
+    })
   );
 });
 
@@ -562,6 +646,7 @@ export {
   resendVerificationEmail,
   loginUser,
   profile,
+  updateProfile,
   logout,
   refreshAccessToken,
   forgotPassword,

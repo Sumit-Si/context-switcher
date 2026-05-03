@@ -18,6 +18,7 @@ export type UserSchemaProps = {
   email: string;
   password: string;
   avatar?: string;
+  avatarPublicId?: string;
   refreshToken?: string;
   isEmailVerified: boolean;
   emailVerifyToken?: string;
@@ -62,6 +63,10 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     avatar: {
       type: String,
+    },
+    avatarPublicId: {
+      type: String,
+      select:false,
     },
     refreshToken: {
       type: String,

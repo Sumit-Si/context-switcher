@@ -11,6 +11,11 @@ export type LoginUserRequestBodyProps = Pick<
   "email" | "password"
 >;
 
+export type UpdateProfileRequestBodyProps = {
+  username?: string;
+  email?: string;
+}
+
 export type CookieOptions = {
   httpOnly: boolean;
   secure: boolean;
