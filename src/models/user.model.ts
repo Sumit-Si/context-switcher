@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import config from "../config/config";
 import bcrypt from "bcryptjs";
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import { AuthProviderEnum, AvailableAuthProviders } from "../constants";
 
 export type PreferenceProps = {
   theme: "light" | "dark";
@@ -111,8 +112,8 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     authProvider: {
       type: String,
-      enum: ["local", "google"],
-      default: "local",
+      enum: AvailableAuthProviders,
+      default: AuthProviderEnum.LOCAL,
     },
     preferences: {
       theme: { type: String, default: "light" },

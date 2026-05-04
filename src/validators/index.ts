@@ -57,6 +57,32 @@ const loginUserPostValidator = z.object({
     .trim(),
 });
 
+const changePasswordPostValidator = z.object({
+  currentPassword: z.string()
+    .nonempty("Current password is required")
+    .trim(),
+
+  newPassword: z.string()
+    .nonempty("New password is required")
+    .min(8, "Password must be at least 8 characters long")
+    .max(20, "Password must be at most 20 characters long")
+    .regex(/[a-z]/, "Must contain lowercase")
+    .regex(/[A-Z]/, "Must contain uppercase")
+    .regex(/\d/, "Must contain number")
+    .regex(/[!@#$%&]/, "Must contain special character")
+    .trim(),
+
+  confirmPassword: z.string()
+    .min(1, "Confirm password is required")
+    .trim(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+}).refine((data) => data.newPassword !== data.currentPassword, {
+  message: "New password must be different from current password",
+  path: ["newPassword"],
+});
+
 const forgotPasswordPostValidator = z.object({
   email: z.email()
     .nonempty("Email is required")
@@ -278,10 +304,10 @@ const updateSwitchLogPatchValidator = z.object({
   projectTag: z.string()
     .max(50, "Project Tag must be at most 50 characters long")
     .optional(),
-    
+
   focusQuality: z.number()
     .min(1, "Focus Quality must be at least 1")
     .optional(),
 });
 
-export { registerUserPostValidator, loginUserPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPutValidator, createRitualPostValidator, updateRitualPutValidator, createSwitchLogPostValidator, updateSwitchLogPatchValidator };
+export { registerUserPostValidator, loginUserPostValidator, changePasswordPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPutValidator, createRitualPostValidator, updateRitualPutValidator, createSwitchLogPostValidator, updateSwitchLogPatchValidator };

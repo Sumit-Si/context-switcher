@@ -11,9 +11,11 @@ import {
   loginWithGoogle,
   resendVerificationEmail,
   updateProfile,
+  changePassword,
 } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate.middleware";
 import {
+  changePasswordPostValidator,
   forgotPasswordPostValidator,
   loginUserPostValidator,
   registerUserPostValidator,
@@ -54,6 +56,9 @@ router.route("/me").get(verifyJWT, profile);
 
 // update profile
 router.route("/update-profile").patch(verifyJWT, upload.single("avatar"), updateProfile);
+
+// change password
+router.route("/change-password").post(verifyJWT, validate(changePasswordPostValidator), changePassword);
 
 // forgot password
 router.route("/forgot-password").post(authLimiter, validate(forgotPasswordPostValidator), forgotPassword);

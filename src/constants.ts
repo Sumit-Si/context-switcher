@@ -1,3 +1,5 @@
+import { AuthProvider } from "./types/auth.types";
+
 type WhitelistOrigin = string[];
 
 export const WHITELIST_ORIGINS: WhitelistOrigin = [
@@ -7,6 +9,14 @@ export const WHITELIST_ORIGINS: WhitelistOrigin = [
 ] as const;
 
 export const DB_NAME: string = "context-switcherDB";
+
+// Auth Provider
+export const AuthProviderEnum = {
+  LOCAL: "local",
+  GOOGLE: "google",
+} as const;
+
+export const AvailableAuthProviders = Object.values(AuthProviderEnum) as readonly AuthProvider[];
 
 // Context Constants
 export type EmotionalTone = "calm" | "energetic" | "analytical" | "creative";

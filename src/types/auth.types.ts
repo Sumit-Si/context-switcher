@@ -1,4 +1,3 @@
-import { Types } from "mongoose";
 import { UserSchemaProps } from "../models/user.model";
 
 export type CreateUserRequestBodyProps = Omit<
@@ -22,3 +21,5 @@ export type CookieOptions = {
   sameSite: "lax" | "strict" | "none";
   maxAge?: number;
 };
+
+export type AuthProvider = "local" | "google";

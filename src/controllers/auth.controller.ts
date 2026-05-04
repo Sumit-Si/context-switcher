@@ -597,6 +597,71 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body as { currentPassword: string, newPassword: string };
+  const user = req.user as UserDocument;
+
+  if (user.authProvider === "google") {
+    throw new ApiError({
+      statusCode: 400,
+      message: "Google accounts cannot use password change. Use Google account settings.",
+    });
+  }
+
+  const userInfo = await User.findOne({
+    _id: user._id,
+    deletedAt: null,
+  }).select("_id password");
+
+  if (!userInfo) {
+    throw new ApiError({
+      statusCode: 401,
+      message: "Unauthorized",
+    })
+  }
+
+  const isCurrentPasswordMatch = await userInfo?.isPasswordCorrect(currentPassword);
+
+  if (!isCurrentPasswordMatch) {
+    throw new ApiError({
+      statusCode: 400,
+      message: "Invalid current password",
+    })
+  }
+
+  // Update password — pre-save hook hashes it automatically
+  userInfo.password = newPassword;
+  // Invalidate ALL existing sessions by rotating the refresh token
+  // This logs out all other devices when password changes — security best practice
+  userInfo.refreshToken = "";
+  await userInfo.save();
+
+  // Clear cookies on THIS device too — force re-login with new password
+  const cookieOptions: CookieOptions = {
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+    sameSite: "lax",
+  };
+
+  logger.info("Password changed — all sessions invalidated", {
+    meta: {
+      userId: user._id.toString(),
+      requestId: req.headers["x-request-id"],
+    }
+  });
+
+  res.status(200)
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
+    .json(
+      new ApiResponse({
+        statusCode: 200,
+        message: "Password changed successfully",
+        data: null,
+      })
+    );
+})
+
 // OAuth
 const loginWithGoogle = asyncHandler(async (req, res) => {
   try {
@@ -649,6 +714,7 @@ export {
   updateProfile,
   logout,
   refreshAccessToken,
+  changePassword,
   forgotPassword,
   resetPassword,
   loginWithGoogle,
