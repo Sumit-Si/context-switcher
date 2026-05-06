@@ -17,3 +17,8 @@ export type GetRequestPayloads = {
   order?: string,
   search?: string,
 }
+
+// Context Types
+export type CognitiveLoad = "low" | "medium" | "high";
+export type EmotionalTone = "calm" | "energetic" | "analytical" | "creative";
+export type EnergyLevel = "low" | "medium" | "high";

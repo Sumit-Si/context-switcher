@@ -1,4 +1,5 @@
 import { AuthProvider } from "./types/auth.types";
+import { CognitiveLoad, EmotionalTone, EnergyLevel } from "./types/common.types";
 
 type WhitelistOrigin = string[];
 
@@ -19,8 +20,13 @@ export const AuthProviderEnum = {
 export const AvailableAuthProviders = Object.values(AuthProviderEnum) as readonly AuthProvider[];
 
 // Context Constants
-export type EmotionalTone = "calm" | "energetic" | "analytical" | "creative";
-export type EnergyLevel = "low" | "medium" | "high";
+export const CognitiveLoadEnum = {
+  LOW: "low",
+  MEDIUM: "medium",
+  HIGH: "high",
+} as const;
+
+export const AvailableCognitiveLoads = Object.values(CognitiveLoadEnum) as readonly CognitiveLoad[];
 
 export const EmotionalTonesEnum = {
   CALM: "calm",

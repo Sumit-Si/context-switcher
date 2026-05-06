@@ -1,5 +1,6 @@
 import mongoose, { Schema, Types } from "mongoose";
-import { AvailableEmotionalTones, AvailableEnergyLevels, EmotionalTone, EmotionalTonesEnum, EnergyLevel, EnergyLevelEnum } from "../constants";
+import { AvailableCognitiveLoads, AvailableEmotionalTones, AvailableEnergyLevels, CognitiveLoadEnum, EmotionalTonesEnum, EnergyLevelEnum } from "../constants";
+import { CognitiveLoad, EmotionalTone, EnergyLevel } from "../types/common.types";
 
 
 export type ContextSchemaProps = {
@@ -8,7 +9,7 @@ export type ContextSchemaProps = {
     color: string,
     icon: string,
     description?: string,
-    cognitiveLoad: number,
+    cognitiveLoad: CognitiveLoad,
     emotionalTone: EmotionalTone,
     energyRequired: EnergyLevel,
     musicSuggestion?: string,
@@ -47,10 +48,9 @@ const contextSchema = new Schema<ContextSchemaProps>({
         required: [true, "Icon is required"],
     },
     cognitiveLoad: {
-        type: Number,
-        required: [true, "Cognitive load is required"],
-        minLength: [1, "Cognitive load must be at least 1"],
-        maxLength: [10, "Cognitive load must be at most 10"],
+        type: String,
+        enum: AvailableCognitiveLoads,
+        default: CognitiveLoadEnum.LOW,
     },
     emotionalTone: {
         type: String,

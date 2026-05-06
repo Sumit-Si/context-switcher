@@ -1,5 +1,5 @@
 import z from "zod";
-import { AvailableRitualTypes, AvailableStepTypes, RitualTypeEnum, StepTypeEnum } from "../constants";
+import { AvailableCognitiveLoads, AvailableEmotionalTones, AvailableEnergyLevels, AvailableRitualTypes, AvailableStepTypes, RitualTypeEnum, StepTypeEnum } from "../constants";
 import { Types } from "mongoose";
 
 const registerUserPostValidator = z.object({
@@ -107,42 +107,39 @@ const resetPasswordPostValidator = z.object({
 const createContextPostValidator = z.object({
   name: z.string()
     .nonempty("Name is required")
+    .min(3, "Name must be at least 3 characters")
     .max(50, "Name must be at most 50 characters long")
     .trim(),
 
   description: z.string()
     .max(1000, "Description must be at most 1000 characters long")
-    .trim(),
+    .trim()
+    .optional(),
 
   color: z.string()
-    .max(8, "Color must be at most 8 characters long")
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format")
     .trim(),
 
   icon: z.string()
     .max(100, "Icon must be at most 100 characters long")
     .trim(),
 
-  cognitiveLoad: z.number()
-    .min(1, "Cognitive Load must be at least 1")
-    .max(10, "Cognitive Load must be at most 10"),
+  cognitiveLoad: z.enum(AvailableCognitiveLoads),
 
-  emotionalTone: z.string()
-    .max(100, "Emotional Tone must be at most 100 characters long")
-    .trim(),
+  emotionalTone: z.enum(AvailableEmotionalTones),
 
-  energyRequired: z.string()
-    .max(100, "Energy Required must be at most 100 characters long")
-    .trim(),
+  energyRequired: z.enum(AvailableEnergyLevels),
 
   musicSuggestion: z.string()
     .max(200, "Music Suggestion must be at most 200 characters long")
-    .trim(),
+    .trim()
+    .optional(),
 
   environmentNote: z.string()
     .max(200, "Environment Note must be at most 200 characters long")
-    .trim(),
+    .trim()
+    .optional(),
 
-  isDefault: z.boolean(),
 });
 
 const updateContextPutValidator = z.object({

@@ -1,19 +1,22 @@
 import { QueryFilter, Types } from "mongoose";
 import Context, { ContextSchemaProps } from "../models/context.model";
-import { GetRequestPayloads, UserDocument } from "../types/common.types";
+import { CognitiveLoad, GetRequestPayloads, UserDocument } from "../types/common.types";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/AsyncHandler";
 import { ApiResponse } from "../utils/ApiResponse";
+import logger from "../config/logger";
 
 
-type CreateContextReqBody = Pick<ContextSchemaProps, "name" | "description" | "color" | "icon" | "cognitiveLoad" | "emotionalTone" | "energyRequired" | "isDefault">;
+type CreateContextReqBody = Pick<ContextSchemaProps, "name" | "description" | "color" | "icon" | "cognitiveLoad" | "emotionalTone" | "energyRequired" | "musicSuggestion" | "environmentNote">;
 
 type UpdateContextReqBody = {
+    name?: string;
     color?: string;
     description?: string;
     icon?: string;
     energyRequired?: string;
     emotionalTone?: string;
+    cognitiveLoad?: CognitiveLoad;
 }
 
 const getAllContexts = asyncHandler(async (req, res) => {
@@ -39,7 +42,7 @@ const getAllContexts = asyncHandler(async (req, res) => {
     }
 
     if (search) {
-        const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]]/g, "\\$&");
+        const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         filters.$or = [
             { name: { $regex: sanitizedSearch, $options: "i" } },
             { description: { $regex: sanitizedSearch, $options: "i" } }
@@ -74,12 +77,13 @@ const getAllContexts = asyncHandler(async (req, res) => {
 });
 
 const createContext = asyncHandler(async (req, res) => {
-    const { name, description, color, icon, cognitiveLoad, emotionalTone, energyRequired, isDefault } = req.body as CreateContextReqBody;
+    const { name, description, color, icon, cognitiveLoad, emotionalTone, energyRequired, musicSuggestion, environmentNote } = req.body as CreateContextReqBody;
 
     const user = req.user as UserDocument;
 
     const existingContext = await Context.findOne({
         name,
+        userId: user._id,
         deletedAt: null,
     }).select("_id name deletedAt");
 
@@ -100,17 +104,25 @@ const createContext = asyncHandler(async (req, res) => {
             emotionalTone,
             energyRequired,
             userId: user._id,
-            // environmentNote,
-            // musicSuggestion,
-            isDefault,
+            environmentNote,
+            musicSuggestion,
         });
 
         const createdContext = await Context.findById(context._id)
-            .select("_id name icon description cognitiveLoad energyRequired emotionalTone");
+            .select("_id name icon description color cognitiveLoad energyRequired emotionalTone");
 
         if (!createdContext) {
             throw new ApiError({ statusCode: 500, message: "Problem while creating context" });
         }
+
+        logger.info("Context created", {
+            meta: {
+                userId: user._id.toString(),
+                contextId: context._id.toString(),
+                name: context.name,
+                requestId: req.headers["x-request-id"],
+            }
+        });
 
         res.status(201)
             .json(new ApiResponse({
@@ -142,6 +154,10 @@ const getContextById = asyncHandler(async (req, res) => {
         deletedAt: null,
     });
 
+    if (!context) {
+        throw new ApiError({ statusCode: 404, message: "Context not exists" });
+    }
+
     res.status(200)
         .json(new ApiResponse({
             statusCode: 200,
@@ -151,7 +167,7 @@ const getContextById = asyncHandler(async (req, res) => {
 })
 
 const updateContextById = asyncHandler(async (req, res) => {
-    const { color, emotionalTone, icon, energyRequired, description } = req.body as UpdateContextReqBody;
+    const { name, color, emotionalTone, icon, energyRequired, description, cognitiveLoad } = req.body as UpdateContextReqBody;
 
     const { id } = req.params as { id: string };
     const contextObjectId = new Types.ObjectId(id);
@@ -167,6 +183,21 @@ const updateContextById = asyncHandler(async (req, res) => {
         throw new ApiError({ statusCode: 404, message: "Context not exists" });
     }
 
+    if (name && name !== existingContext.name) {
+        const alreadyExists = await Context.findOne({
+            name,
+            userId: user._id,
+            deletedAt: null,
+        }).select("_id");
+
+        if (alreadyExists) {
+            throw new ApiError({
+                statusCode: 409,
+                message: "Context with this name already exists",
+            });
+        }
+    }
+
     try {
         const updatedContext = await Context.findByIdAndUpdate(contextObjectId, {
             color,
@@ -180,6 +211,12 @@ const updateContextById = asyncHandler(async (req, res) => {
         if (!updatedContext) {
             throw new ApiError({ statusCode: 500, message: "Problem while updating context" });
         }
+
+        logger.info("Context updated", {
+            userId: user._id.toString(),
+            contextId: id,
+            requestId: req.headers["x-request-id"],
+        });
 
         res.status(200)
             .json(new ApiResponse({
@@ -208,14 +245,23 @@ const deleteContextById = asyncHandler(async (req, res) => {
     }
 
     try {
-        const deleteContext = await Context.findByIdAndUpdate(contextObjectId, {
+        const deleteContext = await Context.findByIdAndUpdate({
+            _id: contextObjectId,
+            userId: user._id,
+            deletedAt: null,
+        }, {
             deletedAt: new Date(),
-        }, { new: true })
-            .populate("userId", "username email avatar");
+        }, { new: true, select: "_id name" });
 
         if (!deleteContext) {
             throw new ApiError({ statusCode: 500, message: "Problem while deleting context" });
         }
+
+        logger.info("Context deleted (soft)", {
+            userId: user._id.toString(),
+            contextId: id,
+            requestId: req.headers["x-request-id"],
+        });
 
         res.status(200)
             .json(new ApiResponse({
