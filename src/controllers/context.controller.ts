@@ -51,7 +51,7 @@ const getAllContexts = asyncHandler(async (req, res) => {
 
     // Use lean for read-only queries (faster)
     const contexts = await Context.find(filters)
-        .select("name description icon color cognitiveLoad emotionalTone energyRequired createdAt")
+        .select("name description icon color cognitiveLoad emotionalTone musicSuggestion environmentNote energyRequired createdAt")
         .lean()
         .sort({ [sortBy]: sortOrder })
         .skip(skip)
@@ -109,7 +109,7 @@ const createContext = asyncHandler(async (req, res) => {
         });
 
         const createdContext = await Context.findById(context._id)
-            .select("_id name icon description color cognitiveLoad energyRequired emotionalTone");
+            .select("_id name icon description color cognitiveLoad energyRequired musicSuggestion environmentNote emotionalTone");
 
         if (!createdContext) {
             throw new ApiError({ statusCode: 500, message: "Problem while creating context" });
