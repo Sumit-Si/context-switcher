@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { createRitual, deleteRitualById, getAllRituals, getRitualById, updateRitualById } from "../controllers/ritual.controller";
+import { createRitual, deleteRitualById, getAllRituals, getRitualById, incrementRitualUsage, updateRitualById } from "../controllers/ritual.controller";
 import { validate } from "../middlewares/validate.middleware";
-import { createRitualPostValidator, updateRitualPutValidator } from "../validators";
+import { createRitualPostValidator, updateRitualPatchValidator } from "../validators";
 
 
 const router = Router();
@@ -16,7 +16,10 @@ router
 router
     .route("/:id")
     .get(verifyJWT, getRitualById)
-    .put(verifyJWT, validate(updateRitualPutValidator), updateRitualById)
+    .patch(verifyJWT, validate(updateRitualPatchValidator), updateRitualById)
     .delete(verifyJWT, deleteRitualById);
+
+// Records that the user actually used this ritual
+router.route("/:id/use").post(verifyJWT, incrementRitualUsage);
 
 export default router;

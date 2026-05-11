@@ -1,19 +1,8 @@
 import mongoose, { Schema, Types } from "mongoose";
-import { AvailableRitualTypes, AvailableStepTypes, RitualType, RitualTypeEnum, StepTypeEnum } from "../constants";
+import { AvailableRitualTypes, AvailableStepTypes, RitualTypeEnum, StepTypeEnum } from "../constants";
+import { RitualType, StepsProps, TargetTransitionProps } from "../types/common.types";
 
 
-export type StepType = "breathe" | "braindump" | "move" | "intention" | "pause";
-export type StepsProps = {
-    type: StepType;
-    duration: number;
-    prompt: string;
-    audioFile?: string;
-}
-
-export type TargetTransitionProps = {
-    fromContext: string;
-    toContext: string;
-}
 
 export type RitualSchemaProps = {
     userId: Types.ObjectId;
@@ -24,6 +13,8 @@ export type RitualSchemaProps = {
     totalDuration: number;
     targetTransition: TargetTransitionProps;
     deletedAt: Date | null;
+    usedCount: number;
+    isDefault: boolean;
 }
 
 const ritualSchema = new Schema<RitualSchemaProps>({
@@ -45,15 +36,24 @@ const ritualSchema = new Schema<RitualSchemaProps>({
     },
     totalDuration: {
         type: Number,
+        min: [1, "Duration must be at least 1 second"],
+        max: [3600, "Duration cannot exceed 60 minutes"],  // ← fix: 3600s = 60 min
+        default: 300,  // ← fix: default 5 min (300s), not 60s
     },
     ritualType: {
         type: String,
         enum: AvailableRitualTypes,
         default: RitualTypeEnum.CUSTOM,
     },
-    targetTransition: {
-        fromContext: String,
-        toContext: String,
+    targetTransition: {           // ← single object, NOT an array
+        fromContext: {
+            type: String,
+            default: null,
+        },
+        toContext: {
+            type: String,
+            default: null,
+        },
     },
     steps: [{
         type: {
@@ -74,13 +74,28 @@ const ritualSchema = new Schema<RitualSchemaProps>({
     deletedAt: {
         type: Date,
         default: null,
-    }
+    },
+    usedCount: {
+        type: Number,
+        default: 0,
+        // Incremented each time this ritual is used in a SwitchLog
+        // Drives the "Uses" stat on RitualCard
+    },
+
+    isDefault: {
+        type: Boolean,
+        default: false,
+        // One ritual can be the user's default — suggested automatically
+    },
 }, {
     timestamps: true,
 });
 
-ritualSchema.index({ userId: 1, name: 1 }, { unique: true });
-
+// add sparse: true so null userId entries are excluded from uniqueness check
+ritualSchema.index({ userId: 1, name: 1 }, { unique: true, sparse: true });
+ritualSchema.index({ userId: 1, deletedAt: 1 });           // getAllRituals filter
+ritualSchema.index({ userId: 1, createdAt: -1 });          // newest first sort
+ritualSchema.index({ userId: 1, ritualType: 1 });          // filter by type
 
 const Ritual = mongoose.model<RitualSchemaProps>("Ritual", ritualSchema);
 

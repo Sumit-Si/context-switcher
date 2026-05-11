@@ -5,11 +5,13 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import { WHITELIST_ORIGINS } from "./constants";
 import { globalLimiter } from "./config/rateLimiter";
+import requestID from "./middlewares/requestID.middleware";
 import "./config/passport";
 
 const app = express();
 
 // middleware
+app.use(requestID);
 app.use(helmet()); // secures your Express app by setting HTTP security headers
 app.use(
   cors({
@@ -36,12 +38,14 @@ import healthCheckRouter from "./routes/healthCheck.routes";
 import authRouter from "./routes/auth.routes";
 import contextRouter from "./routes/context.routes";
 import ritualRouter from "./routes/ritual.routes";
+import switchLogRouter from "./routes/switchLog.routes";
 import globalErrorHandler from "./utils/globalErrorHandler";
 
 app.use("/api/v1/healthCheck", healthCheckRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/contexts", contextRouter);
 app.use("/api/v1/rituals", ritualRouter);
+app.use("/api/v1/switch-logs", switchLogRouter);
 
 app.use(globalErrorHandler);
 

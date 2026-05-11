@@ -142,7 +142,7 @@ const createContextPostValidator = z.object({
 
 });
 
-const updateContextPutValidator = z.object({
+const updateContextPatchValidator = z.object({
   color: z.string()
     .max(8, "Color must be at most 8 characters long")
     .regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color")
@@ -172,56 +172,44 @@ const updateContextPutValidator = z.object({
 // Ritual Validators
 const createRitualPostValidator = z.object({
   name: z.string()
-    .nonempty("Name is required")
+    .min(1, "Name is required")                          // ← fix 3
     .min(2, "Name must be at least 2 characters long")
     .max(50, "Name must be at most 50 characters long")
     .trim(),
 
   description: z.string()
-    .max(1000, "Description must be at most 500 characters long")
+    .max(1000, "Description must be at most 1000 characters long")
     .optional(),
 
   ritualType: z.enum(AvailableRitualTypes)
     .default(RitualTypeEnum.CUSTOM),
 
-  totalDuration: z.number()
-    .min(1, "Duration must be at least 1 second"),
+  totalDuration: z.coerce.number()
+    .min(1, "Duration must be at least 1 second")
+    .max(3600, "Ritual cannot exceed 60 minutes"),
 
   steps: z.array(
     z.object({
       type: z.enum(AvailableStepTypes)
         .default(StepTypeEnum.BRAINDUMP),
-
-      duration: z.number()
-        .min(1, "Duration must be at least 1 second"),
-
+      duration: z.coerce.number()
+        .min(10, "Each step needs at least 10 seconds")
+        .max(3600, "Each step cannot exceed 60 minutes"),
       prompt: z.string()
-        .min(1, "Prompt must be at least 1 characters long")
-        .max(500, "Prompt must be at most 500 characters long")
-        .trim(),
-
-      audioFile: z.url()
+        .max(200, "Prompt must be at most 200 characters long")
         .trim()
-        .optional()
-      ,
+        .optional(),
+      audioFile: z.string().url("Invalid URL").trim().optional(),  // ← fix 1
     })
-  ),
+  ).min(1, "At least one step is required"),               // ← bonus: empty steps[] would silently pass
 
   targetTransition: z.object({
-    fromContext: z.string()
-      .nonempty("From context is required")
-      .min(1, "From context must be at least 1 character long")
-      .trim(),
-
-    toContext: z.string()
-      .nonempty("To context is required")
-      .min(1, "To context must be at least 1 character long")
-      .trim(),
-  })
-
+    fromContext: z.string().optional(),
+    toContext: z.string().optional(),
+  }).default({}),                                          // ← fix 2: removed .optional()
 });
 
-const updateRitualPutValidator = z.object({
+const updateRitualPatchValidator = z.object({
   name: z.string()
     .min(2, "Name must be at least 2 characters long")
     .max(50, "Name must be at most 50 characters long")
@@ -307,4 +295,4 @@ const updateSwitchLogPatchValidator = z.object({
     .optional(),
 });
 
-export { registerUserPostValidator, loginUserPostValidator, changePasswordPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPutValidator, createRitualPostValidator, updateRitualPutValidator, createSwitchLogPostValidator, updateSwitchLogPatchValidator };
+export { registerUserPostValidator, loginUserPostValidator, changePasswordPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPatchValidator, createRitualPostValidator, updateRitualPatchValidator, createSwitchLogPostValidator, updateSwitchLogPatchValidator };

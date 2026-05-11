@@ -2,7 +2,7 @@ import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware";
 import { createContext, deleteContextById, getAllContexts, getContextById, updateContextById } from "../controllers/context.controller";
 import { validate } from "../middlewares/validate.middleware";
-import { createContextPostValidator, updateContextPutValidator } from "../validators";
+import { createContextPostValidator, updateContextPatchValidator } from "../validators";
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router
 router
     .route("/:id")
     .get(verifyJWT, getContextById)
-    .put(verifyJWT,validate(updateContextPutValidator), updateContextById)
+    .patch(verifyJWT,validate(updateContextPatchValidator), updateContextById)
     .delete(verifyJWT, deleteContextById);
 
 export default router;

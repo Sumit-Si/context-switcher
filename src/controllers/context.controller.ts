@@ -200,6 +200,8 @@ const updateContextById = asyncHandler(async (req, res) => {
 
     try {
         const updatedContext = await Context.findByIdAndUpdate(contextObjectId, {
+            name,
+            cognitiveLoad,
             color,
             icon,
             emotionalTone,
@@ -213,9 +215,11 @@ const updateContextById = asyncHandler(async (req, res) => {
         }
 
         logger.info("Context updated", {
-            userId: user._id.toString(),
-            contextId: id,
-            requestId: req.headers["x-request-id"],
+            meta: {
+                userId: user._id.toString(),
+                contextId: id,
+                requestId: req.headers["x-request-id"],
+            }
         });
 
         res.status(200)
@@ -258,9 +262,12 @@ const deleteContextById = asyncHandler(async (req, res) => {
         }
 
         logger.info("Context deleted (soft)", {
-            userId: user._id.toString(),
-            contextId: id,
-            requestId: req.headers["x-request-id"],
+            meta: {
+                userId: user._id.toString(),
+                contextId: id,
+                requestId: req.headers["x-request-id"],
+            }
+
         });
 
         res.status(200)

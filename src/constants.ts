@@ -1,5 +1,5 @@
 import { AuthProvider } from "./types/auth.types";
-import { CognitiveLoad, EmotionalTone, EnergyLevel } from "./types/common.types";
+import { CognitiveLoad, EmotionalTone, EnergyLevel, RitualType, StepType } from "./types/common.types";
 
 type WhitelistOrigin = string[];
 
@@ -46,16 +46,12 @@ export const EnergyLevelEnum = {
 export const AvailableEnergyLevels = Object.values(EnergyLevelEnum) as readonly EnergyLevel[];
 
 // Ritual Constants
-export type RitualType = "custom" | "template";
-
 export const RitualTypeEnum = {
   CUSTOM: "custom",
   TEMPLATE: "template",
 } as const;
 
 export const AvailableRitualTypes = Object.values(RitualTypeEnum) as readonly RitualType[];
-
-export type StepType = "breathe" | "braindump" | "move" | "intention" | "pause";
 
 export const StepTypeEnum = {
   BREATHE: "breathe",

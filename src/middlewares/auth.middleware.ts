@@ -39,6 +39,11 @@ const verifyJWT = asyncHandler(async (req, res, next) => {
     next();
   } catch (error) {
     if (error instanceof TokenExpiredError) {
+      // ✅ SET THE HEADER FIRST — before throwing
+      // This runs on the res object directly, so it reaches the client
+      // even though the error is thrown afterward
+      res.setHeader("X-Token-Expired", "true");
+
       throw new ApiError({
         statusCode: 401,
         code: "TOKEN_EXPIRED",

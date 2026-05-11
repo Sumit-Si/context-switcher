@@ -1,33 +1,27 @@
 import { QueryFilter, Types } from "mongoose";
-import Ritual, { RitualSchemaProps, StepsProps } from "../models/ritual.model";
-import { GetRequestPayloads, UserDocument } from "../types/common.types";
+import Ritual, { RitualSchemaProps } from "../models/ritual.model";
+import { GetRequestPayloads, StepsProps, UserDocument } from "../types/common.types";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/AsyncHandler";
-import { RitualType } from "../constants";
+import logger from "../config/logger";
 
 
-type CreateRitualRequestBody = Pick<RitualSchemaProps, "name" | "ritualType" | "totalDuration" | "steps" | "targetTransition">;
+type CreateRitualRequestBody = Pick<RitualSchemaProps, "name" | "description" | "ritualType" | "totalDuration" | "steps" | "targetTransition">;
 
 type UpdateRitualRequestBody = {
     name?: string;
     description?: string;
     steps?: StepsProps[];
+    totalDuration?: number;
 };
 
 const getAllRituals = asyncHandler(async (req, res) => {
     const { page: rawPage = "1", limit: rawLimit = "10", sortBy = "createdAt", order = "asc", search } = req.query as unknown as GetRequestPayloads;
 
     const user = req.user as UserDocument;
-
-    let page = Number(rawPage);
-    let limit = Number(rawLimit);
-
-    if (page < 1 || (limit < 1 || limit >= 50)) {
-        page = 1;
-        limit = 10;
-    }
-
+    const page = Math.max(1, Number(rawPage) || 1);
+    const limit = Math.min(50, Math.max(1, Number(rawLimit) || 10));
     const skip = (page - 1) * limit;
 
     const sortOrder = order === "desc" ? -1 : 1;
@@ -38,7 +32,7 @@ const getAllRituals = asyncHandler(async (req, res) => {
     }
 
     if (search) {
-        const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]]/g, "\\$&");
+        const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         filters.$or = [
             { name: { $regex: sanitizedSearch, $options: "i" } },
             { description: { $regex: sanitizedSearch, $options: "i" } }
@@ -73,7 +67,7 @@ const getAllRituals = asyncHandler(async (req, res) => {
 });
 
 const createRitual = asyncHandler(async (req, res) => {
-    const { name, ritualType, totalDuration, steps, targetTransition } = req.body as CreateRitualRequestBody;
+    const { name, description, ritualType, totalDuration, steps, targetTransition } = req.body as CreateRitualRequestBody;
     const user = req.user as UserDocument;
 
     const existingRitual = await Ritual.findOne({
@@ -83,12 +77,13 @@ const createRitual = asyncHandler(async (req, res) => {
     }).select("_id");
 
     if (existingRitual) {
-        throw new ApiError({ statusCode: 400, message: "Ritual already exists" });
+        throw new ApiError({ statusCode: 409, message: "Ritual already exists" });
     }
 
     try {
         const ritual = await Ritual.create({
             name,
+            description,
             userId: user._id,
             ritualType,
             totalDuration,
@@ -97,11 +92,20 @@ const createRitual = asyncHandler(async (req, res) => {
         });
 
         const createdRitual = await Ritual.findById(ritual._id)
-            .select("_id name ritualType totalDuration steps targetTransition");
+            .select("_id name description ritualType totalDuration steps targetTransition usedCount isDefault createdAt");
 
         if (!createdRitual) {
             throw new ApiError({ statusCode: 500, message: "Problem while creating ritual" });
         }
+
+        logger.info("RITUAL_CREATED", {
+            meta: {
+                userId: user._id.toString(),
+                ritualId: createdRitual._id.toString(),
+                name: ritual.name,
+                requestId: req.headers["x-request-id"],
+            },
+        });
 
         res.status(201)
             .json(new ApiResponse({
@@ -123,7 +127,7 @@ const getRitualById = asyncHandler(async (req, res) => {
         _id: ritualObjectId,
         deletedAt: null,
         userId: user._id,
-    }).select("_id name ritualType totalDuration steps targetTransition");
+    }).select("_id name description ritualType totalDuration steps targetTransition usedCount isDefault");
 
     if (!ritual) {
         throw new ApiError({ statusCode: 404, message: "Ritual not exists" });
@@ -148,21 +152,33 @@ const updateRitualById = asyncHandler(async (req, res) => {
         _id: ritualObjectId,
         deletedAt: null,
         userId: user._id,
-    });
+    }).select("_id");
 
     if (!ritual) {
         throw new ApiError({ statusCode: 404, message: "Ritual not exists" });
     }
 
-    const updateRitual = await Ritual.findByIdAndUpdate(ritualObjectId, {
-        name,
-        description,
-        steps,
-    }, { new: true });
+    // Only update necessary fields that was sent by user
+    const updateData: Record<string, unknown> = {};
+    if (name) updateData.name = name;
+    if (description) updateData.description = description;
+    if (steps) updateData.steps = steps;
+
+    const updateRitual = await Ritual.findByIdAndUpdate(ritualObjectId,
+        updateData,
+        { new: true, select: "_id name description ritualType totalDuration steps targetTransition usedCount updatedAt" });
 
     if (!updateRitual) {
         throw new ApiError({ statusCode: 500, message: "Problem while updating ritual" });
     }
+
+    logger.info("RITUAL_UPDATED", {
+        meta: {
+            userId: user._id.toString(),
+            ritualId: updateRitual._id.toString(),
+            requestId: req.headers["x-request-id"],
+        },
+    });
 
     res.status(200)
         .json(new ApiResponse({
@@ -181,7 +197,7 @@ const deleteRitualById = asyncHandler(async (req, res) => {
         _id: ritualObjectId,
         deletedAt: null,
         userId: user._id,
-    });
+    }).select("_id");
 
     if (!ritual) {
         throw new ApiError({ statusCode: 404, message: "Ritual not exists" });
@@ -189,11 +205,19 @@ const deleteRitualById = asyncHandler(async (req, res) => {
 
     const deleteRitual = await Ritual.findByIdAndUpdate(ritualObjectId, {
         deletedAt: new Date(),
-    }, { new: true });
+    }, { new: true, select: "_id name" });
 
     if (!deleteRitual) {
         throw new ApiError({ statusCode: 500, message: "Problem while deleting ritual" });
     }
+
+    logger.info("RITUAL_DELETED", {
+        meta: {
+            userId: user._id.toString(),
+            ritualId: deleteRitual._id.toString(),
+            requestId: req.headers["x-request-id"],
+        },
+    });
 
     res.status(200)
         .json(new ApiResponse({
@@ -203,6 +227,30 @@ const deleteRitualById = asyncHandler(async (req, res) => {
         }));
 });
 
+// ── INCREMENT USED COUNT ───────────────────────────────────────────────────────
+// Called when user actually completes a ritual during a context switch
+const incrementRitualUsage = asyncHandler(async (req, res) => {
+    const { id } = req.params as { id: string };
+    const user = req.user as UserDocument;
+    const ritualObjectId = new Types.ObjectId(id);
+
+    const updated = await Ritual.findByIdAndUpdate(
+        { _id: ritualObjectId, userId: user._id, deletedAt: null },
+        { $inc: { usedCount: 1 } },  // atomic increment — safe for concurrent requests
+        { new: true, select: "_id usedCount" }
+    );
+
+    if (!updated) {
+        throw new ApiError({ statusCode: 500, message: "Problem while updating ritual count" });
+    }
+
+    res.status(200).json(new ApiResponse({
+        statusCode: 200,
+        message: "Usage recorded",
+        data: updated,
+    }));
+});
+
 
 export {
     getAllRituals,
@@ -210,4 +258,5 @@ export {
     getRitualById,
     updateRitualById,
     deleteRitualById,
+    incrementRitualUsage,
 }
