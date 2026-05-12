@@ -28,13 +28,13 @@ export type RitualType = "custom" | "template";
 export type StepType = "breathe" | "braindump" | "move" | "intention" | "pause";
 
 export type StepsProps = {
-    type: StepType;
-    duration: number;
-    prompt: string;
-    audioFile?: string;
+  type: StepType;
+  duration: number;
+  prompt: string;
+  audioFile?: string;
 }
 
 export type TargetTransitionProps = {
-    fromContext?: string;
-    toContext?: string;
+  fromContext?: string;
+  toContext?: string;
 }

@@ -41,7 +41,7 @@ const getAllRituals = asyncHandler(async (req, res) => {
 
     // Use lean for read-only queries (faster)
     const rituals = await Ritual.find(filters)
-        .select("name description ritualType steps totalDuration targetTransition createdAt updatedAt")
+        .select("_id name description ritualType steps totalDuration targetTransition usedCount isDefault createdAt updatedAt")
         .lean()
         .sort({ [sortBy]: sortOrder })
         .skip(skip)
