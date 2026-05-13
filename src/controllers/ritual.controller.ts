@@ -75,6 +75,7 @@ const createRitual = asyncHandler(async (req, res) => {
         userId: user._id,
         deletedAt: null,
     }).select("_id");
+    
 
     if (existingRitual) {
         throw new ApiError({ statusCode: 409, message: "Ritual already exists" });
