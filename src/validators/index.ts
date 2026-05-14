@@ -239,42 +239,25 @@ const updateRitualPatchValidator = z.object({
 // SwitchLog Validators
 const createSwitchLogPostValidator = z.object({
   fromContext: z.string()
-    .nonempty("From context is required")
-    .refine(Types.ObjectId.isValid, {
-      message: "Invalid fromContext id",
-    })
-    .trim(),
+    .refine(Types.ObjectId.isValid, { message: "Invalid fromContext id" })
+    .optional(),   // ← change from required to optional
 
   toContext: z.string()
     .nonempty("To context is required")
-    .refine(Types.ObjectId.isValid, {
-      message: "Invalid toContext id",
-    })
+    .refine(Types.ObjectId.isValid, { message: "Invalid toContext id" })
     .trim(),
 
   ritualId: z.string()
-    .refine(Types.ObjectId.isValid, {
-      message: "Invalid ritualId id",
-    })
+    .refine(Types.ObjectId.isValid, { message: "Invalid ritualId" })
     .optional(),
 
-  ritualCompleted: z.boolean()
-    .default(false),
+  ritualCompleted: z.boolean().default(false),
+  ritualSkipped: z.boolean().default(false),
 
-  ritualSkipped: z.boolean()
-    .default(false),
-
-  distraction: z.string()
-    .max(200, "Distraction must be at most 200 characters long")
-    .optional(),
-
-  notes: z.string()
-    .max(500, "Notes must be at most 500 characters long")
-    .optional(),
-
-  projectTag: z.string()
-    .max(50, "Project Tag must be at most 50 characters long")
-    .optional(),
+  distraction: z.string().max(200).optional(),
+  notes: z.string().max(500).optional(),
+  projectTag: z.string().max(50).optional(),
+  // Remove startTime — always server-set
 });
 
 const updateSwitchLogPatchValidator = z.object({
@@ -291,8 +274,12 @@ const updateSwitchLogPatchValidator = z.object({
     .optional(),
 
   focusQuality: z.number()
-    .min(1, "Focus Quality must be at least 1")
+    .min(1, "Focus quality must be at least 1")
+    .max(5, "Focus quality must be at most 5")   // ← was missing
     .optional(),
+
+  ritualCompleted: z.boolean().optional(),        // ← was missing
+  ritualSkipped: z.boolean().optional(),        // ← was missing
 });
 
 export { registerUserPostValidator, loginUserPostValidator, changePasswordPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPatchValidator, createRitualPostValidator, updateRitualPatchValidator, createSwitchLogPostValidator, updateSwitchLogPatchValidator };

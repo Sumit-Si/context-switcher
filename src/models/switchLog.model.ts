@@ -3,7 +3,7 @@ import mongoose, { Schema, Types } from "mongoose";
 
 export type SwitchLogSchemaProps = {
     userId: Types.ObjectId;
-    fromContext: Types.ObjectId;
+    fromContext?: Types.ObjectId | null;
     toContext: Types.ObjectId;
     startTime: Date;
     endTime?: Date | null;
@@ -27,7 +27,7 @@ const switchLogSchema = new Schema<SwitchLogSchemaProps>({
     fromContext: {
         type: Schema.Types.ObjectId,
         ref: "Context",
-        required: true,
+        default: null,
     },
     toContext: {
         type: Schema.Types.ObjectId,
@@ -78,6 +78,7 @@ const switchLogSchema = new Schema<SwitchLogSchemaProps>({
     }
 });
 
+switchLogSchema.index({ userId: 1, endTime: 1, deletedAt: 1 }); // getActiveSession query pattern
 switchLogSchema.index({ userId: 1, startTime: -1 });
 switchLogSchema.index({ userId: 1, fromContext: 1, toContext: 1 });
 

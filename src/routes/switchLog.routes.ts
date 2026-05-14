@@ -29,7 +29,7 @@ router
 // End Session
 router
     .route("/:id/end")
-    .post(verifyJWT, endSession);
+    .patch(verifyJWT, endSession);
 
 
 export default router;
