@@ -10,7 +10,7 @@ import logger from "../config/logger";
 type CreateSwitchLogRequestBody = Pick<
     SwitchLogSchemaProps,
     "fromContext" | "toContext" | "ritualId" | "ritualCompleted" |
-    "ritualSkipped" | "distraction" | "notes" | "projectTag"
+    "ritualSkipped" | "focusQuality" | "distraction" | "notes" | "projectTag"
 >;
 
 type UpdateSwitchLogRequestBody = {
@@ -86,7 +86,7 @@ const createSwitchLog = asyncHandler(async (req, res) => {
     const {
         fromContext, toContext, ritualId,
         ritualCompleted, ritualSkipped,
-        distraction, notes, projectTag,
+        distraction, focusQuality, notes, projectTag,
     } = req.body as CreateSwitchLogRequestBody;
 
     const user = req.user as UserDocument;
@@ -133,6 +133,7 @@ const createSwitchLog = asyncHandler(async (req, res) => {
         ritualCompleted: ritualCompleted ?? false,
         ritualSkipped: ritualSkipped ?? false,
         distraction,
+        focusQuality,
         notes,
         projectTag,
     });
@@ -193,7 +194,7 @@ const updateSwitchLogById = asyncHandler(async (req, res) => {
     }).select("_id");
 
     if (!exists) {
-        throw new ApiError({ statusCode: 404, message: "Switch log not found" });
+        throw new ApiError({ statusCode: 404, message: "Switch log not exists" });
     }
 
     const updateData: Record<string, unknown> = {};

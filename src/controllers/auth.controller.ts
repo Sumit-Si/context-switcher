@@ -274,6 +274,13 @@ const loginUser = asyncHandler(async (req, res) => {
     "_id username email avatar isEmailVerified createdAt",
   );
 
+  logger.info("User logged in", {
+    meta: {
+      userId: user._id.toString(),
+      requestId: req.headers["x-request-id"],
+    }
+  });
+
   res.status(200)
     .cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 })
     .cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
@@ -369,9 +376,11 @@ const updateProfile = asyncHandler(async (req, res) => {
   );
 
   logger.info("Profile updated", {
-    userId: user._id.toString(),
-    requestId: req.headers["x-request-id"],
-    fields: Object.keys(updateData), // log WHAT changed, not the values
+    meta: {
+      userId: user._id.toString(),
+      requestId: req.headers["x-request-id"],
+      fields: Object.keys(updateData), // log WHAT changed, not the values
+    }
   });
 
   res.status(200).json(
@@ -463,9 +472,12 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     await User.updateOne({ _id: user._id }, { $unset: { refreshToken: "" } });
 
     logger.warn("Token mismatch — possible token reuse attack", {
-      userId: user._id.toString(),
-      ip: req.ip,
-      requestId: req.headers["x-request-id"],
+      meta: {
+        userId: user._id.toString(),
+        ip: req.ip,
+        requestId: req.headers["x-request-id"],
+      }
+
     });
 
     throw new ApiError({
@@ -485,8 +497,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   };
 
   logger.info("Access token refreshed", {
-    userId: user._id.toString(),
-    requestId: req.headers["x-request-id"],
+    meta: {
+      userId: user._id.toString(),
+      requestId: req.headers["x-request-id"],
+    }
   });
 
   // FIX: Don't send tokens in the response body — they're already in cookies
