@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 import config from "../config/config";
 import bcrypt from "bcryptjs";
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
@@ -15,6 +15,7 @@ export type PreferenceProps = {
 export type AuthProviderProps = "local" | "google";
 
 export type UserSchemaProps = {
+  _id: Types.ObjectId;
   username: string;
   email: string;
   password: string;
@@ -67,7 +68,7 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     avatarPublicId: {
       type: String,
-      select:false,
+      select: false,
     },
     refreshToken: {
       type: String,

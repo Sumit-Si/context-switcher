@@ -20,15 +20,15 @@ import { DecodedJWTPayload } from "../middlewares/auth.middleware";
 import { UserDocument } from "../types/common.types";
 import logger from "../config/logger";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../config/cloudinary";
+import { isMongoUniqueViolation } from "../utils/usernameUtils";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body as CreateUserRequestBodyProps;
-  // console.log(req.body);
+
   const existingUser = await User.findOne({
     $or: [{ email }, { username }],
   }).select("email username");
 
-  // 409 -> resource already exists
   if (existingUser) {
     throw new ApiError({
       statusCode: 409,
@@ -36,39 +36,53 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
-  const user = await User.create({
-    username,
-    email,
-    password,
-  });
-
-  const registeredUser = await User.findById(user._id)
-    .select("_id username email isEmailVerified");
-
-  if (!registeredUser) {
-    throw new ApiError({
-      statusCode: 400,
-      message: "Problem while creating user",
+  try {
+    const user = await User.create({
+      username,
+      email,
+      password,
     });
+
+    const registeredUser = await User.findById(user._id)
+      .select("_id username email isEmailVerified");
+
+    if (!registeredUser) {
+      throw new ApiError({
+        statusCode: 400,
+        message: "Problem while creating user",
+      });
+    }
+
+    const { rawToken, hashedToken, expiry } = generateEmailVerifyToken();
+    console.log("verifyToken", rawToken);
+
+    user.emailVerifyToken = hashedToken;
+    user.emailVerifyExpiry = expiry;
+    await user.save();
+
+    // send mail
+    await sendVerificationEmail(user, rawToken);
+
+    res.status(201).json(
+      new ApiResponse({
+        statusCode: 201,
+        data: registeredUser,
+        message: "User created successfully",
+      }),
+    );
+
+  } catch (error: any) {
+    if (isMongoUniqueViolation(error) && error?.code === 11000) {
+      const field = Object.keys(error?.keyPattern ?? {})[0]; // "username" | "email"
+      throw new ApiError({
+        statusCode: 409,
+        message: field
+          ? `An account with this ${field} already exists`
+          : "User already exists!",
+      });
+    }
+    throw new ApiError({ statusCode: 500, message: "Problem while creating user" });
   }
-
-  const { rawToken, hashedToken, expiry } = generateEmailVerifyToken();
-  console.log("verifyToken", rawToken);
-
-  user.emailVerifyToken = hashedToken;
-  user.emailVerifyExpiry = expiry;
-  await user.save();
-
-  // send mail
-  await sendVerificationEmail(user, rawToken);
-
-  res.status(201).json(
-    new ApiResponse({
-      statusCode: 201,
-      data: registeredUser,
-      message: "User created successfully",
-    }),
-  );
 });
 
 const verifyEmail = asyncHandler(async (req, res) => {
@@ -85,8 +99,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
     .createHash("sha256")
     .update(token)
     .digest("hex");
-
-  console.log("Hashed Token: ", hashedToken);
 
   const user = await User.findOne({
     emailVerifyToken: hashedToken,
@@ -108,7 +120,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
   }
 
   try {
-
     await User.updateOne(
       { _id: user._id },
       {
@@ -123,7 +134,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
         email: user.email,
         requestId: req.headers["x-request-id"],
       }
-
     });
 
     res.status(200).json(
