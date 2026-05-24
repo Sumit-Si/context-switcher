@@ -54,7 +54,7 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     const { rawToken, hashedToken, expiry } = generateEmailVerifyToken();
-    console.log("verifyToken", rawToken);
+    // Email verification token generated (not logged for security)
 
     user.emailVerifyToken = hashedToken;
     user.emailVerifyExpiry = expiry;
@@ -548,7 +548,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     const rawToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
-    console.log("Token", hashedToken);
+    // Password reset token generated (not logged for security)
     const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     user.passwordResetToken = hashedToken;
@@ -703,7 +703,7 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
-    console.log("access and refresh token", accessToken, refreshToken);
+    // Access and refresh tokens generated (not logged for security)
 
     const cookieOptions: CookieOptions = {
       httpOnly: true,
@@ -724,7 +724,12 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
     res.redirect(`${config.CLIENT_URL}/panel/dashboard`);
 
   } catch (error) {
-    // console.error('OAuth error:', error);
+    logger.error("OAUTH_ERROR", {
+      meta: {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      }
+    });
     res.redirect(`${config.CLIENT_URL}/login?error=oauth_failed`);
   }
 });

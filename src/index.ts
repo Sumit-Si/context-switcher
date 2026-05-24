@@ -7,14 +7,13 @@ import { initRateLimiter } from "./config/rateLimiter";
 const PORT = config.PORT;
 
 dbConnect()
-  .then(({connection}) => {
+  .then(({ connection }) => {
     app.listen(PORT, () => {
       logger.info("DB_CONNECTED ✅", {
         meta: {
           CONNECTION_NAME: connection.name,
         }
       });
-      // console.log(`Server is running at PORT:${PORT}`);
 
       initRateLimiter(connection);
       logger.info("RATE_LIMITER_INITIALIZED ✅");
@@ -28,7 +27,6 @@ dbConnect()
     });
   })
   .catch((error) => {
-    // console.log("Mongodb connection error ❌", error);
     logger.error("SERVER_DB_CONNECTION_ERROR", {
       meta: error
     });

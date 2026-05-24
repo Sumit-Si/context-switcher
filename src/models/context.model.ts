@@ -15,7 +15,7 @@ export type ContextSchemaProps = {
     musicSuggestion?: string,
     environmentNote?: string,
     isDefault: boolean,
-    deletedAt?: Date | null,
+    deletedAt: Date | null,
 }
 
 const contextSchema = new Schema<ContextSchemaProps>({

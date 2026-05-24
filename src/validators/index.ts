@@ -148,17 +148,15 @@ const updateContextPatchValidator = z.object({
     .regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color")
     .trim(),
 
-  emotionalTone: z.string()
-    .max(100, "Emotional Tone must be at most 100 characters long")
-    .trim(),
+  cognitiveLoad: z.enum(AvailableCognitiveLoads),
 
   icon: z.string()
     .max(100, "Icon must be at most 100 characters long")
     .trim(),
 
-  energyRequired: z.string()
-    .max(100, "Energy Required must be at most 100 characters long")
-    .trim(),
+  energyRequired: z.enum(AvailableEnergyLevels),
+
+  emotionalTone: z.enum(AvailableEmotionalTones),
 
   name: z.string()
     .max(50, "Name must be at most 50 characters long")
@@ -167,7 +165,7 @@ const updateContextPatchValidator = z.object({
   description: z.string()
     .max(1000, "Description must be at most 1000 characters long")
     .trim(),
-})
+}).partial();
 
 // Ritual Validators
 const createRitualPostValidator = z.object({

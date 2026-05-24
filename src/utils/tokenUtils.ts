@@ -17,12 +17,7 @@ const generateAccessAndRefreshToken = async (
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
-  // console.log(accessToken, refreshToken, "access and refresh");
-
   return { accessToken, refreshToken };
-  // return { accessToken, refreshToken };
-  // logger.error("Failed generating tokens", { error });
-  // throw new ApiError({ statusCode: 500, message: "Problem while generating refresh and access tokens" });
 };
 
 const generateEmailVerifyToken = () => {

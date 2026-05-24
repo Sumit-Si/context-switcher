@@ -49,7 +49,7 @@ const uploadOnCloudinary = async (localFilePath: string, folderName?: string) =>
 const deleteFromCloudinary = async (publicId: string) => {
   try {
     const response = await cloudinary.uploader.destroy(publicId);
-    console.log("Deleted from cloudinary. Public id", publicId);
+    logger.info("Cloudinary asset deleted", { publicId });
     return response;
   } catch (error) {
     logger.error("Cloudinary delete failed", {
