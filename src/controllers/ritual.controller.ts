@@ -167,7 +167,7 @@ const updateRitualById = asyncHandler(async (req, res) => {
 
     const updateRitual = await Ritual.findByIdAndUpdate(ritualObjectId,
         updateData,
-        { new: true, select: "_id name description ritualType totalDuration steps targetTransition usedCount updatedAt" });
+        { returnDocument: 'after', select: "_id name description ritualType totalDuration steps targetTransition usedCount updatedAt" });
 
     if (!updateRitual) {
         throw new ApiError({ statusCode: 500, message: "Problem while updating ritual" });
@@ -206,7 +206,7 @@ const deleteRitualById = asyncHandler(async (req, res) => {
 
     const deleteRitual = await Ritual.findByIdAndUpdate(ritualObjectId, {
         deletedAt: new Date(),
-    }, { new: true, select: "_id name" });
+    }, { returnDocument: 'after', select: "_id name" });
 
     if (!deleteRitual) {
         throw new ApiError({ statusCode: 500, message: "Problem while deleting ritual" });
@@ -238,7 +238,7 @@ const incrementRitualUsage = asyncHandler(async (req, res) => {
     const updated = await Ritual.findByIdAndUpdate(
         { _id: ritualObjectId, userId: user._id, deletedAt: null },
         { $inc: { usedCount: 1 } },  // atomic increment — safe for concurrent requests
-        { new: true, select: "_id usedCount" }
+        { returnDocument: 'after', select: "_id usedCount" }
     );
 
     if (!updated) {

@@ -118,7 +118,8 @@ const createSwitchLog = asyncHandler(async (req, res) => {
     // Auto-close any open session — only one active session allowed per user
     await SwitchLog.findOneAndUpdate(
         { userId: user._id, endTime: null, deletedAt: null },
-        { endTime: new Date() }
+        { endTime: new Date() },
+        { returnDocument: 'after' }
     );
 
     // FIX 2: no try/catch — asyncHandler handles errors. Real error messages surface.
@@ -210,7 +211,7 @@ const updateSwitchLogById = asyncHandler(async (req, res) => {
     const updated = await SwitchLog.findOneAndUpdate(
         { _id: new Types.ObjectId(id) },
         updateData,
-        { new: true, select: SWITCH_LOG_SELECT }
+        { returnDocument: 'after', select: SWITCH_LOG_SELECT }
     );
 
     if (!updated) {
@@ -237,7 +238,7 @@ const deleteSwitchLogById = asyncHandler(async (req, res) => {
     const deleted = await SwitchLog.findByIdAndUpdate(
         id,
         { deletedAt: new Date() },
-        { new: true, select: "_id" }
+        { returnDocument: 'after', select: "_id" }
     );
 
     if (!deleted) {

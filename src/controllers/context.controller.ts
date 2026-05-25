@@ -207,7 +207,7 @@ const updateContextById = asyncHandler(async (req, res) => {
             emotionalTone,
             energyRequired,
             description,
-        }, { new: true })
+        }, { returnDocument: 'after' })
             .populate("userId", "username email avatar");
 
         if (!updatedContext) {
@@ -255,7 +255,7 @@ const deleteContextById = asyncHandler(async (req, res) => {
             deletedAt: null,
         }, {
             deletedAt: new Date(),
-        }, { new: true, select: "_id name" });
+        }, { returnDocument: 'after', select: "_id name" });
 
         if (!deleteContext) {
             throw new ApiError({ statusCode: 500, message: "Problem while deleting context" });

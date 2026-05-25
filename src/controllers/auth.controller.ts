@@ -381,7 +381,7 @@ const updateProfile = asyncHandler(async (req, res) => {
   const updatedUser = await User.findByIdAndUpdate(user._id,
     updateData,
     {
-      new: true, select: "_id username email avatar isEmailVerified createdAt"
+      returnDocument: 'after', select: "_id username email avatar isEmailVerified createdAt"
     }
   );
 
@@ -576,49 +576,42 @@ const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params as { token: string };
   const { password: newPassword } = req.body as { password: string };
 
-  try {
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    const user = await User.findOne({
-      passwordResetToken: hashedToken,
-      passwordResetExpiry: { $gt: Date.now() },
-    });
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpiry: { $gt: Date.now() },
+  });
 
-    if (!user) {
-      throw new ApiError({
-        statusCode: 400,
-        message: "Token invalid or expired",
-      });
-    }
-
-    user.passwordResetToken = undefined;
-    user.password = newPassword;
-    user.passwordResetExpiry = undefined;
-    user.refreshToken = ""; // revoke sessions after reset
-    await user.save();
-
-    const cookieOptions: CookieOptions = {
-      httpOnly: true,
-      secure: config.NODE_ENV === "production",
-      sameSite: "lax",
-    };
-
-    res.clearCookie("accessToken", cookieOptions);
-    res.clearCookie("refreshToken", cookieOptions);
-
-    res.status(200).json(
-      new ApiResponse({
-        statusCode: 200,
-        message: "Password reset successfully",
-        data: null,
-      }),
-    );
-  } catch (error) {
+  if (!user) {
     throw new ApiError({
-      statusCode: 500,
-      message: "Problem while resetting password",
+      statusCode: 400,
+      message: "Token invalid or expired",
     });
   }
+
+  user.passwordResetToken = undefined;
+  user.password = newPassword;
+  user.passwordResetExpiry = undefined;
+  user.refreshToken = ""; // revoke sessions after reset
+  await user.save();
+
+  const cookieOptions: CookieOptions = {
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+    sameSite: "lax",
+  };
+
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
+
+  res.status(200).json(
+    new ApiResponse({
+      statusCode: 200,
+      message: "Password reset successfully",
+      data: null,
+    }),
+  );
 });
 
 const changePassword = asyncHandler(async (req, res) => {

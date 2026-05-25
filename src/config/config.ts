@@ -50,10 +50,10 @@ const envSchema = z.object({
     .min(1, "EMAIL_PASS cannot be empty"),
 
   CLIENT_URL: z
-    .url({error: "CLIENT_URL must be a valid URL"}),
+    .url({ error: "CLIENT_URL must be a valid URL" }),
 
   SERVER_URL: z
-    .url({error: "SERVER_URL must be a valid URL"}),
+    .url({ error: "SERVER_URL must be a valid URL" }),
 
   GOOGLE_CLIENT_ID: z
     .string({ error: "GOOGLE_CLIENT_ID is required" })
@@ -64,7 +64,7 @@ const envSchema = z.object({
     .min(1, "GOOGLE_CLIENT_SECRET cannot be empty"),
 
   GOOGLE_CALLBACK_URL: z
-    .url({error: "GOOGLE_CALLBACK_URL must be a valid URL"}),
+    .url({ error: "GOOGLE_CALLBACK_URL must be a valid URL" }),
 
   CLOUDINARY_CLOUD_NAME: z
     .string({ error: "CLOUDINARY_CLOUD_NAME is required" })
@@ -82,8 +82,8 @@ const envSchema = z.object({
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error("❌ Invalid environment variables:");
-  console.error(parsedEnv.error.flatten().fieldErrors);
+  process.stderr.write("❌ Invalid environment variables:\n");
+  process.stderr.write(JSON.stringify(parsedEnv.error.flatten().fieldErrors, null, 2) + "\n");
   process.exit(1);
 }
 
