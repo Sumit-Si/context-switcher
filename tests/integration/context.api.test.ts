@@ -28,7 +28,7 @@ describe('Context API Integration Tests', () => {
         authToken = jwt.sign(
             { _id: userId },
             config.ACCESS_TOKEN_SECRET,
-            { expiresIn: config.ACCESS_TOKEN_EXPIRY }
+            { expiresIn: config.ACCESS_TOKEN_EXPIRY as jwt.SignOptions["expiresIn"] }
         );
     });
 

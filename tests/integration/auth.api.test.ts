@@ -28,7 +28,7 @@ describe('Authentication API Integration Tests', () => {
         authToken = jwt.sign(
             { _id: userId },
             config.ACCESS_TOKEN_SECRET,
-            { expiresIn: config.ACCESS_TOKEN_EXPIRY }
+            { expiresIn: config.ACCESS_TOKEN_EXPIRY as jwt.SignOptions["expiresIn"] }
         );
     });
 
@@ -147,10 +147,11 @@ describe('Authentication API Integration Tests', () => {
             expect(response.body.data.loggedInUser.password).toBeUndefined();
 
             // Check that cookies are set
-            const cookies = response.headers['set-cookie'] as string[] | undefined;
+            const cookies = response.headers['set-cookie'];
             expect(cookies).toBeDefined();
-            expect(Array.isArray(cookies) && cookies.some((cookie: string) => cookie.includes('accessToken'))).toBe(true);
-            expect(Array.isArray(cookies) && cookies.some((cookie: string) => cookie.includes('refreshToken'))).toBe(true);
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies as string];
+            expect(cookieArray.some((cookie: string) => cookie.includes('accessToken'))).toBe(true);
+            expect(cookieArray.some((cookie: string) => cookie.includes('refreshToken'))).toBe(true);
         });
 
         it('should reject login with invalid email', async () => {
@@ -231,8 +232,9 @@ describe('Authentication API Integration Tests', () => {
                     password: 'Test@1234',
                 });
 
-            const cookies = loginResponse.headers['set-cookie'] as string[] | undefined;
-            const refreshTokenCookie = cookies?.find((cookie: string) =>
+            const cookies = loginResponse.headers['set-cookie'];
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies as string];
+            const refreshTokenCookie = cookieArray.find((cookie: string) =>
                 cookie.includes('refreshToken')
             );
 
@@ -248,10 +250,11 @@ describe('Authentication API Integration Tests', () => {
             expect(response.body.message).toContain('refreshed');
 
             // Check that new tokens are set in cookies
-            const newCookies = response.headers['set-cookie'] as string[] | undefined;
+            const newCookies = response.headers['set-cookie'];
             expect(newCookies).toBeDefined();
-            expect(Array.isArray(newCookies) && newCookies.some((cookie: string) => cookie.includes('accessToken'))).toBe(true);
-            expect(Array.isArray(newCookies) && newCookies.some((cookie: string) => cookie.includes('refreshToken'))).toBe(true);
+            const newCookieArray = Array.isArray(newCookies) ? newCookies : [newCookies as string];
+            expect(newCookieArray.some((cookie: string) => cookie.includes('accessToken'))).toBe(true);
+            expect(newCookieArray.some((cookie: string) => cookie.includes('refreshToken'))).toBe(true);
         });
 
         it('should reject refresh with missing refresh token', async () => {
@@ -401,9 +404,10 @@ describe('Authentication API Integration Tests', () => {
             expect(response.body.message).toContain('logged out');
 
             // Check that cookies are cleared
-            const cookies = response.headers['set-cookie'] as string[] | undefined;
+            const cookies = response.headers['set-cookie'];
             expect(cookies).toBeDefined();
-            expect(Array.isArray(cookies) && cookies.some((cookie: string) =>
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies as string];
+            expect(cookieArray.some((cookie: string) =>
                 cookie.includes('accessToken=;') || (cookie.includes('accessToken') && cookie.includes('Thu, 01 Jan 1970'))
             )).toBe(true);
         });
