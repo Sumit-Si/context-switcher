@@ -42,16 +42,28 @@ const consoleLogFormat = format.printf((info) => {
 })
 
 const consoleTransport = (): Array<ConsoleTransportInstance> => {
-    if (config.NODE_ENV === "development") {
+    // Set log level based on environment
+    const logLevel = config.NODE_ENV === "development" ? "debug" : "info";
+
+    if (config.NODE_ENV === "development" || config.NODE_ENV === "test") {
         return [
             new transports.Console({
-                level: "info",
+                level: logLevel,
                 format: format.combine(format.timestamp(), consoleLogFormat)
             })
         ]
     }
 
-    return [];
+    // In production, use simpler console format
+    return [
+        new transports.Console({
+            level: logLevel,
+            format: format.combine(
+                format.timestamp(),
+                format.json()
+            )
+        })
+    ];
 }
 
 // @ts-ignore
@@ -84,30 +96,56 @@ const fileLogFormat = format.printf((info) => {
 });
 
 const fileTransport = (): Array<FileTransportInstance> => {
+    // Disable file logging in test environment
+    if (config.NODE_ENV === "test") {
+        return [];
+    }
+
     return [
         new transports.File({
             filename: path.join(__dirname, "../", "../", "logs", `${config.NODE_ENV}.log`),
-            level: "info",
+            level: config.NODE_ENV === "development" ? "debug" : "info",
             format: format.combine(format.timestamp(), fileLogFormat),
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
         })
     ]
 }
 
 const mongodbTransport = (): Array<MongoDBTransportInstance> => {
-    return [
-        new transports.MongoDB({
-            level: "info",
-            db: config.MONGO_URI,
-            metaKey: "meta",
-            expireAfterSeconds: 3600 * 24 * 30,
-            collection: "application.logs",
-        })
-    ]
+    // Only use MongoDB transport in production for error logs
+    if (config.NODE_ENV === "production") {
+        return [
+            new transports.MongoDB({
+                level: "error", // Only log errors to MongoDB in production
+                db: config.MONGO_URI,
+                metaKey: "meta",
+                expireAfterSeconds: 3600 * 24 * 30, // 30 days
+                collection: "application.logs",
+            })
+        ]
+    }
+    return [];
 }
 
 export default createLogger({
     defaultMeta: {
         meta: {},
     },
-    transports: [...fileTransport(), ...mongodbTransport() , ...consoleTransport()]
+    transports: [...fileTransport(), ...mongodbTransport(), ...consoleTransport()],
+    // Handle uncaught exceptions and unhandled rejections
+    exceptionHandlers: [
+        new transports.File({
+            filename: path.join(__dirname, "../", "../", "logs", "exceptions.log"),
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+        })
+    ],
+    rejectionHandlers: [
+        new transports.File({
+            filename: path.join(__dirname, "../", "../", "logs", "rejections.log"),
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+        })
+    ],
 });

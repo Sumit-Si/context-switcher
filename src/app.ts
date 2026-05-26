@@ -39,6 +39,7 @@ import authRouter from "./routes/auth.routes";
 import contextRouter from "./routes/context.routes";
 import ritualRouter from "./routes/ritual.routes";
 import switchLogRouter from "./routes/switchLog.routes";
+import analyticsRouter from "./routes/analytics.routes";
 import globalErrorHandler from "./utils/globalErrorHandler";
 
 app.use("/api/v1/healthCheck", healthCheckRouter);
@@ -46,6 +47,17 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/contexts", contextRouter);
 app.use("/api/v1/rituals", ritualRouter);
 app.use("/api/v1/switch-logs", switchLogRouter);
+app.use("/api/v1/analytics", analyticsRouter);
+
+// 404 catch-all route - must be after all valid routes
+app.use((req, res) => {
+  res.status(404).json({
+    statusCode: 404,
+    success: false,
+    message: `Route ${req.method} ${req.originalUrl} not found`,
+    data: null,
+  });
+});
 
 app.use(globalErrorHandler);
 
