@@ -246,6 +246,17 @@ const loginUser = asyncHandler(async (req, res) => {
   }).select("email password isEmailVerified _id");
 
   if (!user) {
+    // Log failed login attempt - user not found
+    logger.warn("Login failed - user not exists", {
+      meta: {
+        email,
+        ip: req.ip ?? req.socket?.remoteAddress ?? "unknown",
+        userAgent: req.headers["user-agent"] ?? "unknown",
+        requestId: req.headers["x-request-id"],
+        security: true,
+      }
+    });
+
     throw new ApiError({
       statusCode: 401,
       code: "INVALID_CREDENTIALS",
@@ -256,6 +267,18 @@ const loginUser = asyncHandler(async (req, res) => {
   const isMatch = await user.isPasswordCorrect(password);
 
   if (!isMatch) {
+    // Log failed login attempt - incorrect password
+    logger.warn("Login failed - incorrect password", {
+      meta: {
+        userId: user._id.toString(),
+        email,
+        ip: req.ip ?? req.socket?.remoteAddress ?? "unknown",
+        userAgent: req.headers["user-agent"] ?? "unknown",
+        requestId: req.headers["x-request-id"],
+        security: true,
+      }
+    });
+
     throw new ApiError({
       statusCode: 401,
       code: "INVALID_CREDENTIALS",
@@ -264,6 +287,18 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   if (!user.isEmailVerified) {
+    // Log failed login attempt - email not verified
+    logger.warn("Login failed - email not verified", {
+      meta: {
+        userId: user._id.toString(),
+        email,
+        ip: req.ip ?? req.socket?.remoteAddress ?? "unknown",
+        userAgent: req.headers["user-agent"] ?? "unknown",
+        requestId: req.headers["x-request-id"],
+        security: true,
+      }
+    });
+
     throw new ApiError({
       statusCode: 403,
       message: "Please verify your email first",
@@ -284,7 +319,7 @@ const loginUser = asyncHandler(async (req, res) => {
     "_id username email avatar isEmailVerified createdAt",
   );
 
-  logger.info("User logged in", {
+  logger.info("User logged in successfully", {
     meta: {
       userId: user._id.toString(),
       requestId: req.headers["x-request-id"],
