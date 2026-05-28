@@ -8,9 +8,10 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file=.env dist/index",
     "dev": "tsc-watch --onSuccess \"pnpm start\"",
-    "format": "prettier --write .",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "format:check": "prettier . --check",
+    "format:fix": "prettier . --fix",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "migrate:dev": "node --env-file=.env script/migration.js",
     "test": "node --env-file=.env.test node_modules/vitest/vitest.mjs run",
     "test:watch": "node --env-file=.env.test node_modules/vitest/vitest.mjs",
@@ -23,7 +24,8 @@
   "license": "ISC",
   "lint-staged": {
     "*.ts": [
-      "pnpm run lint:fix"
+      "pnpm run lint:fix",
+      "pnpm run format:fix"
     ]
   },
   "packageManager": "pnpm@10.20.0",
@@ -49,6 +51,7 @@
     "@vitest/coverage-v8": "^4.1.7",
     "@vitest/ui": "^4.1.7",
     "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
     "fast-check": "^4.8.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
