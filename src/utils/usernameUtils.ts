@@ -7,12 +7,12 @@ import User from "../models/user.model";
  */
 const slugify = (name: string): string =>
   name
-    .normalize("NFD")                        // decompose accented chars: ã → a + combining
-    .replace(/[\u0300-\u036f]/g, "")         // strip combining marks
+    .normalize("NFD") // decompose accented chars: ã → a + combining
+    .replace(/[\u0300-\u036f]/g, "") // strip combining marks
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "")              // keep only alphanumeric
-    .slice(0, 20)                            // cap base length
-    || "user";                               // fallback if everything stripped
+    .replace(/[^a-z0-9]/g, "") // keep only alphanumeric
+    .slice(0, 20) || // cap base length
+  "user"; // fallback if everything stripped
 
 /**
  * Generates a username that is guaranteed unique in the DB.
@@ -26,7 +26,7 @@ const slugify = (name: string): string =>
  * This is O(1) in the happy path (most users get the slug or slug+4digits).
  */
 export const generateUniqueUsername = async (
-  displayName: string
+  displayName: string,
 ): Promise<string> => {
   const MAX_ATTEMPTS = 5;
   const base = slugify(displayName);
@@ -48,7 +48,10 @@ export const generateUniqueUsername = async (
   return `${base}${Date.now()}`;
 };
 
-export const isMongoUniqueViolation = (error: unknown, field?: string): boolean => {
+export const isMongoUniqueViolation = (
+  error: unknown,
+  field?: string,
+): boolean => {
   if (
     typeof error === "object" &&
     error !== null &&
@@ -56,7 +59,8 @@ export const isMongoUniqueViolation = (error: unknown, field?: string): boolean 
     (error as { code: number }).code === 11000
   ) {
     if (!field) return true;
-    const keyPattern = (error as { keyPattern?: Record<string, unknown> }).keyPattern;
+    const keyPattern = (error as { keyPattern?: Record<string, unknown> })
+      .keyPattern;
     return keyPattern ? field in keyPattern : false;
   }
   return false;

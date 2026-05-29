@@ -1,6 +1,12 @@
 import config from "./config/config";
 import type { AuthProvider } from "./types/auth.types";
-import type { CognitiveLoad, EmotionalTone, EnergyLevel, RitualType, StepType } from "./types/common.types";
+import type {
+  CognitiveLoad,
+  EmotionalTone,
+  EnergyLevel,
+  RitualType,
+  StepType,
+} from "./types/common.types";
 
 type WhitelistOrigin = string[];
 
@@ -16,7 +22,9 @@ export const AuthProviderEnum = {
   GOOGLE: "google",
 } as const;
 
-export const AvailableAuthProviders = Object.values(AuthProviderEnum) as readonly AuthProvider[];
+export const AvailableAuthProviders = Object.values(
+  AuthProviderEnum,
+) as readonly AuthProvider[];
 
 // Context Constants
 export const CognitiveLoadEnum = {
@@ -25,7 +33,9 @@ export const CognitiveLoadEnum = {
   HIGH: "high",
 } as const;
 
-export const AvailableCognitiveLoads = Object.values(CognitiveLoadEnum) as readonly CognitiveLoad[];
+export const AvailableCognitiveLoads = Object.values(
+  CognitiveLoadEnum,
+) as readonly CognitiveLoad[];
 
 export const EmotionalTonesEnum = {
   CALM: "calm",
@@ -34,7 +44,9 @@ export const EmotionalTonesEnum = {
   CREATIVE: "creative",
 } as const;
 
-export const AvailableEmotionalTones = Object.values(EmotionalTonesEnum) as readonly EmotionalTone[];
+export const AvailableEmotionalTones = Object.values(
+  EmotionalTonesEnum,
+) as readonly EmotionalTone[];
 
 export const EnergyLevelEnum = {
   LOW: "low",
@@ -42,7 +54,9 @@ export const EnergyLevelEnum = {
   HIGH: "high",
 } as const;
 
-export const AvailableEnergyLevels = Object.values(EnergyLevelEnum) as readonly EnergyLevel[];
+export const AvailableEnergyLevels = Object.values(
+  EnergyLevelEnum,
+) as readonly EnergyLevel[];
 
 // Ritual Constants
 export const RitualTypeEnum = {
@@ -50,7 +64,9 @@ export const RitualTypeEnum = {
   TEMPLATE: "template",
 } as const;
 
-export const AvailableRitualTypes = Object.values(RitualTypeEnum) as readonly RitualType[];
+export const AvailableRitualTypes = Object.values(
+  RitualTypeEnum,
+) as readonly RitualType[];
 
 export const StepTypeEnum = {
   BREATHE: "breathe",
@@ -60,4 +76,6 @@ export const StepTypeEnum = {
   PAUSE: "pause",
 } as const;
 
-export const AvailableStepTypes = Object.values(StepTypeEnum) as readonly StepType[];
+export const AvailableStepTypes = Object.values(
+  StepTypeEnum,
+) as readonly StepType[];

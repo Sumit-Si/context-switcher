@@ -17,46 +17,46 @@ const dbConnect = async () => {
         maxPoolSize: connectionOptions.maxPoolSize,
         serverSelectionTimeoutMS: connectionOptions.serverSelectionTimeoutMS,
         socketTimeoutMS: connectionOptions.socketTimeoutMS,
-      }
+      },
     });
 
     const connectionInstance = await mongoose.connect(
       `${config.MONGO_URI}/${DB_NAME}?authSource=admin`,
-      connectionOptions
+      connectionOptions,
     );
 
     logger.info("MongoDB connection established", {
       meta: {
         host: connectionInstance.connection.host,
         database: connectionInstance.connection.name,
-      }
+      },
     });
 
     const connection = connectionInstance.connection;
 
     // Add connection event handlers
-    connection.on('connected', () => {
+    connection.on("connected", () => {
       logger.info("MongoDB connected event", {
-        meta: { timestamp: new Date().toISOString() }
+        meta: { timestamp: new Date().toISOString() },
       });
     });
 
-    connection.on('error', (error) => {
+    connection.on("error", (error) => {
       logger.error("MongoDB connection error", {
-        meta: { error, timestamp: new Date().toISOString() }
+        meta: { error, timestamp: new Date().toISOString() },
       });
     });
 
-    connection.on('disconnected', () => {
+    connection.on("disconnected", () => {
       logger.warn("MongoDB disconnected", {
-        meta: { timestamp: new Date().toISOString() }
+        meta: { timestamp: new Date().toISOString() },
       });
     });
 
     return { connection };
   } catch (error) {
     logger.error("MongoDB connection failed - Application startup aborted", {
-      meta: { error, timestamp: new Date().toISOString() }
+      meta: { error, timestamp: new Date().toISOString() },
     });
     process.exit(1);
   }

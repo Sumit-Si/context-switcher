@@ -38,11 +38,11 @@ app.use(
       preload: true,
     },
     frameguard: {
-      action: 'deny',
+      action: "deny",
     },
     noSniff: true,
     xssFilter: true,
-  })
+  }),
 );
 app.use(
   cors({
@@ -81,10 +81,14 @@ app.use("/api/v1/switch-logs", switchLogRouter);
 app.use("/api/v1/analytics", analyticsRouter);
 
 // Swagger API Documentation
-app.use("/api/v1/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Context Switcher API Docs'
-}));
+app.use(
+  "/api/v1/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: ".swagger-ui .topbar { display: none }",
+    customSiteTitle: "Context Switcher API Docs",
+  }),
+);
 app.get("/api/v1/docs.json", (_req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.send(swaggerSpec);

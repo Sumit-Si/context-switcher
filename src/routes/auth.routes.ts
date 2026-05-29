@@ -150,9 +150,7 @@ router.route("/verify-email").get(verifyEmail);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/resend-verification")
-  .post(authLimiter, resendVerificationEmail);
+router.route("/resend-verification").post(authLimiter, resendVerificationEmail);
 
 /**
  * @swagger
@@ -217,7 +215,9 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.route("/login").post(authLimiter, rateLimit, validate(loginUserPostValidator), loginUser);
+router
+  .route("/login")
+  .post(authLimiter, rateLimit, validate(loginUserPostValidator), loginUser);
 
 /**
  * @swagger
@@ -360,7 +360,9 @@ router.route("/me").get(verifyJWT, profile);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.route("/update-profile").patch(verifyJWT, upload.single("avatar"), updateProfile);
+router
+  .route("/update-profile")
+  .patch(verifyJWT, upload.single("avatar"), updateProfile);
 
 /**
  * @swagger
@@ -404,7 +406,9 @@ router.route("/update-profile").patch(verifyJWT, upload.single("avatar"), update
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.route("/change-password").post(verifyJWT, validate(changePasswordPostValidator), changePassword);
+router
+  .route("/change-password")
+  .post(verifyJWT, validate(changePasswordPostValidator), changePassword);
 
 /**
  * @swagger
@@ -436,7 +440,9 @@ router.route("/change-password").post(verifyJWT, validate(changePasswordPostVali
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.route("/forgot-password").post(authLimiter, validate(forgotPasswordPostValidator), forgotPassword);
+router
+  .route("/forgot-password")
+  .post(authLimiter, validate(forgotPasswordPostValidator), forgotPassword);
 
 /**
  * @swagger
@@ -481,7 +487,9 @@ router.route("/forgot-password").post(authLimiter, validate(forgotPasswordPostVa
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.route("/reset-password/:token").post(authLimiter, validate(resetPasswordPostValidator), resetPassword);
+router
+  .route("/reset-password/:token")
+  .post(authLimiter, validate(resetPasswordPostValidator), resetPassword);
 
 /**
  * @swagger
@@ -494,9 +502,11 @@ router.route("/reset-password/:token").post(authLimiter, validate(resetPasswordP
  *       302:
  *         description: Redirect to Google OAuth consent screen
  */
-router.route("/google").get(passport.authenticate("google", {
-  scope: ["email", "profile"],
-}));
+router.route("/google").get(
+  passport.authenticate("google", {
+    scope: ["email", "profile"],
+  }),
+);
 
 /**
  * @swagger
@@ -509,9 +519,12 @@ router.route("/google").get(passport.authenticate("google", {
  *       302:
  *         description: Redirect to client with tokens or error
  */
-router.route("/google/callback").get(passport.authenticate("google", {
-  session: false,
-  failureRedirect: `${process.env.CLIENT_URL}/login?error=oauth_failed`,
-}), loginWithGoogle);
+router.route("/google/callback").get(
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: `${process.env.CLIENT_URL}/login?error=oauth_failed`,
+  }),
+  loginWithGoogle,
+);
 
 export default router;

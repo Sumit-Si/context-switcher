@@ -9,7 +9,7 @@
     "start": "node --env-file=.env dist/index",
     "dev": "tsc-watch -p tsconfig.build.json --onSuccess \"pnpm start\"",
     "format:check": "prettier . --check",
-    "format:fix": "prettier . --fix",
+    "format:fix": "prettier . --write",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "migrate:dev": "node --env-file=.env script/migration.js",

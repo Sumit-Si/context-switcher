@@ -21,7 +21,11 @@ const storage = multer.diskStorage({
 });
 
 // File filter for images
-const imageFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const imageFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) => {
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
   if (file.mimetype && allowedTypes.includes(file.mimetype)) {
@@ -35,7 +39,7 @@ export const upload = multer({
   storage,
   fileFilter: imageFilter,
   limits: {
-    fileSize: 2 * 1024 * 1024,  // 2MB limit
+    fileSize: 2 * 1024 * 1024, // 2MB limit
     files: 1,
   },
 });

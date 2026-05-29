@@ -74,7 +74,7 @@ const userSchema = new Schema<UserSchemaProps>(
     },
     refreshToken: {
       type: String,
-      select: false,  /// ← never returned unless explicitly requested
+      select: false, /// ← never returned unless explicitly requested
     },
     isEmailVerified: {
       type: Boolean,
@@ -147,13 +147,12 @@ userSchema.pre("save", async function () {
 });
 
 userSchema.methods.isPasswordCorrect = async function (
-  password: string
+  password: string,
 ): Promise<boolean> {
   return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateAccessToken = function () {
-
   const secret: Secret = config.ACCESS_TOKEN_SECRET;
   const expiresIn = config.ACCESS_TOKEN_EXPIRY as SignOptions["expiresIn"];
 

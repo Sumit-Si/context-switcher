@@ -28,9 +28,9 @@ const generateEmailVerifyToken = () => {
     .digest("hex");
 
   return {
-    rawToken,       // → send this in the email link
-    hashedToken,    // → store this in DB
-    expiry: new Date(Date.now() + 24 * 60 * 60 * 1000),  // 24h from now
+    rawToken, // → send this in the email link
+    hashedToken, // → store this in DB
+    expiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h from now
   };
 };
 

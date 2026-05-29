@@ -1,8 +1,17 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { createContext, deleteContextById, getAllContexts, getContextById, updateContextById } from "../controllers/context.controller";
+import {
+  createContext,
+  deleteContextById,
+  getAllContexts,
+  getContextById,
+  updateContextById,
+} from "../controllers/context.controller";
 import { validate } from "../middlewares/validate.middleware";
-import { createContextPostValidator, updateContextPatchValidator } from "../validators";
+import {
+  createContextPostValidator,
+  updateContextPatchValidator,
+} from "../validators";
 
 const router = Router();
 
@@ -155,9 +164,9 @@ const router = Router();
  *               $ref: '#/components/schemas/Error'
  */
 router
-    .route("/")
-    .get(verifyJWT, getAllContexts)
-    .post(verifyJWT, validate(createContextPostValidator), createContext);
+  .route("/")
+  .get(verifyJWT, getAllContexts)
+  .post(verifyJWT, validate(createContextPostValidator), createContext);
 
 /**
  * @swagger
@@ -331,9 +340,9 @@ router
  *               $ref: '#/components/schemas/Error'
  */
 router
-    .route("/:id")
-    .get(verifyJWT, getContextById)
-    .patch(verifyJWT, validate(updateContextPatchValidator), updateContextById)
-    .delete(verifyJWT, deleteContextById);
+  .route("/:id")
+  .get(verifyJWT, getContextById)
+  .patch(verifyJWT, validate(updateContextPatchValidator), updateContextById)
+  .delete(verifyJWT, deleteContextById);
 
 export default router;

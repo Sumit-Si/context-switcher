@@ -1,9 +1,19 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { createSwitchLog, deleteSwitchLogById, endSession, getActiveSession, getAllSwitchLogs, getSwitchLogById, updateSwitchLogById } from "../controllers/switchLog.controller";
+import {
+  createSwitchLog,
+  deleteSwitchLogById,
+  endSession,
+  getActiveSession,
+  getAllSwitchLogs,
+  getSwitchLogById,
+  updateSwitchLogById,
+} from "../controllers/switchLog.controller";
 import { validate } from "../middlewares/validate.middleware";
-import { createSwitchLogPostValidator, updateSwitchLogPatchValidator } from "../validators";
-
+import {
+  createSwitchLogPostValidator,
+  updateSwitchLogPatchValidator,
+} from "../validators";
 
 const router = Router();
 
@@ -153,9 +163,9 @@ const router = Router();
  *               $ref: '#/components/schemas/Error'
  */
 router
-    .route("/")
-    .get(verifyJWT, getAllSwitchLogs)
-    .post(verifyJWT, validate(createSwitchLogPostValidator), createSwitchLog);
+  .route("/")
+  .get(verifyJWT, getAllSwitchLogs)
+  .post(verifyJWT, validate(createSwitchLogPostValidator), createSwitchLog);
 
 /**
  * @swagger
@@ -194,9 +204,7 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-    .route("/active")
-    .get(verifyJWT, getActiveSession);
+router.route("/active").get(verifyJWT, getActiveSession);
 
 /**
  * @swagger
@@ -367,10 +375,14 @@ router
  *               $ref: '#/components/schemas/Error'
  */
 router
-    .route("/:id")
-    .get(verifyJWT, getSwitchLogById)
-    .patch(verifyJWT, validate(updateSwitchLogPatchValidator), updateSwitchLogById)
-    .delete(verifyJWT, deleteSwitchLogById);
+  .route("/:id")
+  .get(verifyJWT, getSwitchLogById)
+  .patch(
+    verifyJWT,
+    validate(updateSwitchLogPatchValidator),
+    updateSwitchLogById,
+  )
+  .delete(verifyJWT, deleteSwitchLogById);
 
 /**
  * @swagger
@@ -426,9 +438,6 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-    .route("/:id/end")
-    .patch(verifyJWT, endSession);
-
+router.route("/:id/end").patch(verifyJWT, endSession);
 
 export default router;

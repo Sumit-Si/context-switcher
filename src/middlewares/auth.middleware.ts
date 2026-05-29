@@ -2,12 +2,8 @@ import config from "../config/config";
 import User from "../models/user.model";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/AsyncHandler";
-import type {
-  JwtPayload} from "jsonwebtoken";
-import jwt, {
-  JsonWebTokenError,
-  TokenExpiredError,
-} from "jsonwebtoken";
+import type { JwtPayload } from "jsonwebtoken";
+import jwt, { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 
 export interface DecodedJWTPayload extends JwtPayload {
   _id: string;
@@ -16,7 +12,8 @@ export interface DecodedJWTPayload extends JwtPayload {
 }
 
 const verifyJWT = asyncHandler(async (req, _res, next) => {
-  const token = req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+  const token =
+    req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     throw new ApiError({ statusCode: 401, message: "Unauthorized!" });
@@ -40,7 +37,6 @@ const verifyJWT = asyncHandler(async (req, _res, next) => {
     next();
   } catch (error: unknown) {
     if (error instanceof TokenExpiredError) {
-
       throw new ApiError({
         statusCode: 401,
         code: "TOKEN_EXPIRED",
@@ -51,7 +47,7 @@ const verifyJWT = asyncHandler(async (req, _res, next) => {
     if (error instanceof JsonWebTokenError) {
       throw new ApiError({
         statusCode: 401,
-        message: "Invalid access token"
+        message: "Invalid access token",
       });
     }
 
@@ -59,7 +55,4 @@ const verifyJWT = asyncHandler(async (req, _res, next) => {
   }
 });
 
-
-export {
-  verifyJWT,
-}
+export { verifyJWT };

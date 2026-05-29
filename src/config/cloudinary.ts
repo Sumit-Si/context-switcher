@@ -3,14 +3,16 @@ import config from "./config";
 import fs from "fs";
 import logger from "./logger";
 
-
 cloudinary.config({
   cloud_name: config.CLOUDINARY_CLOUD_NAME,
   api_key: config.CLOUDINARY_API_KEY,
   api_secret: config.CLOUDINARY_API_SECRET,
 });
 
-const uploadOnCloudinary = async (localFilePath: string, folderName?: string) => {
+const uploadOnCloudinary = async (
+  localFilePath: string,
+  folderName?: string,
+) => {
   if (!localFilePath) {
     throw new Error("uploadOnCloudinary: localFilePath is required");
   }
@@ -25,7 +27,7 @@ const uploadOnCloudinary = async (localFilePath: string, folderName?: string) =>
       meta: {
         url: response.url,
         publicId: response.public_id,
-      }
+      },
     });
 
     await fs.promises.unlink(localFilePath);
@@ -35,7 +37,7 @@ const uploadOnCloudinary = async (localFilePath: string, folderName?: string) =>
       meta: {
         localPath: localFilePath,
         error: error instanceof Error ? error.message : String(error),
-      }
+      },
     });
     // Clean up temp file even on failure
     if (fs.existsSync(localFilePath)) {
@@ -44,7 +46,6 @@ const uploadOnCloudinary = async (localFilePath: string, folderName?: string) =>
     throw error; // re-throw — let asyncHandler + globalErrorHandler log it properly
   }
 };
-
 
 const deleteFromCloudinary = async (publicId: string) => {
   try {
@@ -56,13 +57,10 @@ const deleteFromCloudinary = async (publicId: string) => {
       meta: {
         publicId,
         error: error instanceof Error ? error.message : String(error),
-      }
+      },
     });
     return null;
   }
 };
 
-export {
-  uploadOnCloudinary,
-  deleteFromCloudinary,
-}
+export { uploadOnCloudinary, deleteFromCloudinary };

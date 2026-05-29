@@ -13,7 +13,6 @@ const globalErrorHandler = (
   const isProd = config.NODE_ENV === "production";
   const user = req.user as UserDocument | undefined;
 
-
   // Logger (Production)
   const logContext = {
     // Request info
@@ -35,9 +34,10 @@ const globalErrorHandler = (
     stack: !isProd && error instanceof Error ? error.stack : undefined,
 
     // Validation errors: safe to log even in prod (no sensitive data)
-    validationErrors: error instanceof ApiError && error.errors?.length > 0
-      ? error.errors
-      : undefined,
+    validationErrors:
+      error instanceof ApiError && error.errors?.length > 0
+        ? error.errors
+        : undefined,
   };
 
   // ─── Log level based on status code ───────────────────────────────────────
@@ -52,7 +52,7 @@ const globalErrorHandler = (
       });
     } else if (error.statusCode === 401 || error.statusCode === 403) {
       logger.warn("Auth failure", {
-        meta: { ...logContext, security: true }
+        meta: { ...logContext, security: true },
       });
     } else if (error.statusCode >= 400) {
       // 400, 404, 422, 429, etc.
@@ -74,26 +74,29 @@ const globalErrorHandler = (
     const errors =
       error.errors?.length > 0
         ? error.errors.map((err) => ({
-          ...(err.field ? { field: err.field } : {}),
-          message:
-            isProd && error.statusCode >= 500
-              ? "Something went wrong"
-              : err.message,
-        }))
-        : [{
-          message:
-            isProd && error.statusCode >= 500
-              ? "Something went wrong"
-              : error.message,
-        }];
+            ...(err.field ? { field: err.field } : {}),
+            message:
+              isProd && error.statusCode >= 500
+                ? "Something went wrong"
+                : err.message,
+          }))
+        : [
+            {
+              message:
+                isProd && error.statusCode >= 500
+                  ? "Something went wrong"
+                  : error.message,
+            },
+          ];
 
     res.status(error.statusCode).json({
       success: false,
       statusCode: error.statusCode,
       code: error.code,
-      message: isProd && error.statusCode >= 500
-        ? "Something went wrong"
-        : error.message,
+      message:
+        isProd && error.statusCode >= 500
+          ? "Something went wrong"
+          : error.message,
       data: null,
       errors,
       // FIX #6: Send requestId back to frontend
@@ -111,13 +114,16 @@ const globalErrorHandler = (
     statusCode: 500,
     message: isProd ? "Something went wrong" : "Internal Server Error",
     data: null,
-    errors: error instanceof Error
-      ? [{ message: isProd ? "Something went wrong" : error.message }]
-      : [],
+    errors:
+      error instanceof Error
+        ? [{ message: isProd ? "Something went wrong" : error.message }]
+        : [],
     requestId: req.headers["x-request-id"] ?? undefined,
     stack: isProd
       ? undefined
-      : error instanceof Error ? error.stack : undefined,
+      : error instanceof Error
+        ? error.stack
+        : undefined,
   });
 };
 

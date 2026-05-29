@@ -1,9 +1,18 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { createRitual, deleteRitualById, getAllRituals, getRitualById, incrementRitualUsage, updateRitualById } from "../controllers/ritual.controller";
+import {
+  createRitual,
+  deleteRitualById,
+  getAllRituals,
+  getRitualById,
+  incrementRitualUsage,
+  updateRitualById,
+} from "../controllers/ritual.controller";
 import { validate } from "../middlewares/validate.middleware";
-import { createRitualPostValidator, updateRitualPatchValidator } from "../validators";
-
+import {
+  createRitualPostValidator,
+  updateRitualPatchValidator,
+} from "../validators";
 
 const router = Router();
 
@@ -163,9 +172,9 @@ const router = Router();
  *               $ref: '#/components/schemas/Error'
  */
 router
-    .route("/")
-    .get(verifyJWT, getAllRituals)
-    .post(verifyJWT, validate(createRitualPostValidator), createRitual);
+  .route("/")
+  .get(verifyJWT, getAllRituals)
+  .post(verifyJWT, validate(createRitualPostValidator), createRitual);
 
 /**
  * @swagger
@@ -352,10 +361,10 @@ router
  *               $ref: '#/components/schemas/Error'
  */
 router
-    .route("/:id")
-    .get(verifyJWT, getRitualById)
-    .patch(verifyJWT, validate(updateRitualPatchValidator), updateRitualById)
-    .delete(verifyJWT, deleteRitualById);
+  .route("/:id")
+  .get(verifyJWT, getRitualById)
+  .patch(verifyJWT, validate(updateRitualPatchValidator), updateRitualById)
+  .delete(verifyJWT, deleteRitualById);
 
 /**
  * @swagger

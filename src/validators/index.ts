@@ -1,5 +1,13 @@
 import z from "zod";
-import { AvailableCognitiveLoads, AvailableEmotionalTones, AvailableEnergyLevels, AvailableRitualTypes, AvailableStepTypes, RitualTypeEnum, StepTypeEnum } from "../constants";
+import {
+  AvailableCognitiveLoads,
+  AvailableEmotionalTones,
+  AvailableEnergyLevels,
+  AvailableRitualTypes,
+  AvailableStepTypes,
+  RitualTypeEnum,
+  StepTypeEnum,
+} from "../constants";
 import { Types } from "mongoose";
 
 const registerUserPostValidator = z.object({
@@ -57,34 +65,35 @@ const loginUserPostValidator = z.object({
     .trim(),
 });
 
-const changePasswordPostValidator = z.object({
-  currentPassword: z.string()
-    .nonempty("Current password is required")
-    .trim(),
+const changePasswordPostValidator = z
+  .object({
+    currentPassword: z.string().nonempty("Current password is required").trim(),
 
-  newPassword: z.string()
-    .nonempty("New password is required")
-    .min(8, "Password must be at least 8 characters long")
-    .max(20, "Password must be at most 20 characters long")
-    .regex(/[a-z]/, "Must contain lowercase")
-    .regex(/[A-Z]/, "Must contain uppercase")
-    .regex(/\d/, "Must contain number")
-    .regex(/[!@#$%&]/, "Must contain special character")
-    .trim(),
+    newPassword: z
+      .string()
+      .nonempty("New password is required")
+      .min(8, "Password must be at least 8 characters long")
+      .max(20, "Password must be at most 20 characters long")
+      .regex(/[a-z]/, "Must contain lowercase")
+      .regex(/[A-Z]/, "Must contain uppercase")
+      .regex(/\d/, "Must contain number")
+      .regex(/[!@#$%&]/, "Must contain special character")
+      .trim(),
 
-  confirmPassword: z.string()
-    .min(1, "Confirm password is required")
-    .trim(),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-}).refine((data) => data.newPassword !== data.currentPassword, {
-  message: "New password must be different from current password",
-  path: ["newPassword"],
-});
+    confirmPassword: z.string().min(1, "Confirm password is required").trim(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: "New password must be different from current password",
+    path: ["newPassword"],
+  });
 
 const forgotPasswordPostValidator = z.object({
-  email: z.email()
+  email: z
+    .email()
     .nonempty("Email is required")
     .max(100, "Email must be at most 100 characters long")
     .lowercase("Email must be in lowercase")
@@ -92,7 +101,8 @@ const forgotPasswordPostValidator = z.object({
 });
 
 const resetPasswordPostValidator = z.object({
-  password: z.string()
+  password: z
+    .string()
     .nonempty("Password is required")
     .min(8, "Password must be at least 8 characters long")
     .max(20, "Password must be at most 20 characters long")
@@ -105,24 +115,25 @@ const resetPasswordPostValidator = z.object({
 
 // Context Validators
 const createContextPostValidator = z.object({
-  name: z.string()
+  name: z
+    .string()
     .nonempty("Name is required")
     .min(3, "Name must be at least 3 characters")
     .max(50, "Name must be at most 50 characters long")
     .trim(),
 
-  description: z.string()
+  description: z
+    .string()
     .max(1000, "Description must be at most 1000 characters long")
     .trim()
     .optional(),
 
-  color: z.string()
+  color: z
+    .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format")
     .trim(),
 
-  icon: z.string()
-    .max(100, "Icon must be at most 100 characters long")
-    .trim(),
+  icon: z.string().max(100, "Icon must be at most 100 characters long").trim(),
 
   cognitiveLoad: z.enum(AvailableCognitiveLoads),
 
@@ -130,122 +141,140 @@ const createContextPostValidator = z.object({
 
   energyRequired: z.enum(AvailableEnergyLevels),
 
-  musicSuggestion: z.string()
+  musicSuggestion: z
+    .string()
     .max(200, "Music Suggestion must be at most 200 characters long")
     .trim()
     .optional(),
 
-  environmentNote: z.string()
+  environmentNote: z
+    .string()
     .max(200, "Environment Note must be at most 200 characters long")
     .trim()
     .optional(),
-
 });
 
-const updateContextPatchValidator = z.object({
-  color: z.string()
-    .max(8, "Color must be at most 8 characters long")
-    .regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color")
-    .trim(),
+const updateContextPatchValidator = z
+  .object({
+    color: z
+      .string()
+      .max(8, "Color must be at most 8 characters long")
+      .regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color")
+      .trim(),
 
-  cognitiveLoad: z.enum(AvailableCognitiveLoads),
+    cognitiveLoad: z.enum(AvailableCognitiveLoads),
 
-  icon: z.string()
-    .max(100, "Icon must be at most 100 characters long")
-    .trim(),
+    icon: z
+      .string()
+      .max(100, "Icon must be at most 100 characters long")
+      .trim(),
 
-  energyRequired: z.enum(AvailableEnergyLevels),
+    energyRequired: z.enum(AvailableEnergyLevels),
 
-  emotionalTone: z.enum(AvailableEmotionalTones),
+    emotionalTone: z.enum(AvailableEmotionalTones),
 
-  name: z.string()
-    .max(50, "Name must be at most 50 characters long")
-    .trim(),
+    name: z.string().max(50, "Name must be at most 50 characters long").trim(),
 
-  description: z.string()
-    .max(1000, "Description must be at most 1000 characters long")
-    .trim(),
-}).partial();
+    description: z
+      .string()
+      .max(1000, "Description must be at most 1000 characters long")
+      .trim(),
+  })
+  .partial();
 
 // Ritual Validators
 const createRitualPostValidator = z.object({
-  name: z.string()
-    .min(1, "Name is required")                          // ← fix 3
+  name: z
+    .string()
+    .min(1, "Name is required") // ← fix 3
     .min(2, "Name must be at least 2 characters long")
     .max(50, "Name must be at most 50 characters long")
     .trim(),
 
-  description: z.string()
+  description: z
+    .string()
     .max(1000, "Description must be at most 1000 characters long")
     .optional(),
 
-  ritualType: z.enum(AvailableRitualTypes)
-    .default(RitualTypeEnum.CUSTOM),
+  ritualType: z.enum(AvailableRitualTypes).default(RitualTypeEnum.CUSTOM),
 
-  totalDuration: z.coerce.number()
+  totalDuration: z.coerce
+    .number()
     .min(1, "Duration must be at least 1 second")
     .max(3600, "Ritual cannot exceed 60 minutes"),
 
-  steps: z.array(
-    z.object({
-      type: z.enum(AvailableStepTypes)
-        .default(StepTypeEnum.BRAINDUMP),
-      duration: z.coerce.number()
-        .min(10, "Each step needs at least 10 seconds")
-        .max(3600, "Each step cannot exceed 60 minutes"),
-      prompt: z.string()
-        .max(200, "Prompt must be at most 200 characters long")
-        .trim()
-        .optional(),
-      audioFile: z.string().url("Invalid URL").trim().optional(),  // ← fix 1
-    })
-  ).min(1, "At least one step is required"),               // ← bonus: empty steps[] would silently pass
+  steps: z
+    .array(
+      z.object({
+        type: z.enum(AvailableStepTypes).default(StepTypeEnum.BRAINDUMP),
+        duration: z.coerce
+          .number()
+          .min(10, "Each step needs at least 10 seconds")
+          .max(3600, "Each step cannot exceed 60 minutes"),
+        prompt: z
+          .string()
+          .max(200, "Prompt must be at most 200 characters long")
+          .trim()
+          .optional(),
+        audioFile: z.string().url("Invalid URL").trim().optional(), // ← fix 1
+      }),
+    )
+    .min(1, "At least one step is required"), // ← bonus: empty steps[] would silently pass
 
-  targetTransition: z.object({
-    fromContext: z.string().optional(),
-    toContext: z.string().optional(),
-  }).default({}),                                          // ← fix 2: removed .optional()
+  targetTransition: z
+    .object({
+      fromContext: z.string().optional(),
+      toContext: z.string().optional(),
+    })
+    .default({}), // ← fix 2: removed .optional()
 });
 
 const updateRitualPatchValidator = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(2, "Name must be at least 2 characters long")
     .max(50, "Name must be at most 50 characters long")
     .trim()
     .optional(),
 
-  description: z.string()
+  description: z
+    .string()
     .max(1000, "Description must be at most 1000 characters long")
     .trim()
     .optional(),
 
-  steps: z.array(
-    z.object({
-      type: z.enum(AvailableStepTypes),
-      duration: z.number()
-        .min(1, "Duration must be at least 1 second"),
-      prompt: z.string()
-        .min(1, "Prompt must be at least 1 characters long")
-        .max(500, "Prompt must be at most 500 characters long")
-        .trim(),
-      audioFile: z.url()
-        .optional(),
-    })
-  ).min(1).optional(),
+  steps: z
+    .array(
+      z.object({
+        type: z.enum(AvailableStepTypes),
+        duration: z.number().min(1, "Duration must be at least 1 second"),
+        prompt: z
+          .string()
+          .min(1, "Prompt must be at least 1 characters long")
+          .max(500, "Prompt must be at most 500 characters long")
+          .trim(),
+        audioFile: z.url().optional(),
+      }),
+    )
+    .min(1)
+    .optional(),
 });
 
 // SwitchLog Validators
 const createSwitchLogPostValidator = z.object({
-  fromContext: z.string()
+  fromContext: z
+    .string()
     .refine(Types.ObjectId.isValid, { message: "Invalid fromContext id" })
-    .optional(),   // ← change from required to optional
+    .optional(), // ← change from required to optional
 
-  toContext: z.string()
+  toContext: z
+    .string()
     .nonempty("To context is required")
     .refine(Types.ObjectId.isValid, { message: "Invalid toContext id" })
     .trim(),
 
-  ritualId: z.string()
+  ritualId: z
+    .string()
     .refine(Types.ObjectId.isValid, { message: "Invalid ritualId" })
     .optional(),
 
@@ -259,25 +288,41 @@ const createSwitchLogPostValidator = z.object({
 });
 
 const updateSwitchLogPatchValidator = z.object({
-  distraction: z.string()
+  distraction: z
+    .string()
     .max(200, "Distraction must be at most 200 characters long")
     .optional(),
 
-  notes: z.string()
+  notes: z
+    .string()
     .max(500, "Notes must be at most 500 characters long")
     .optional(),
 
-  projectTag: z.string()
+  projectTag: z
+    .string()
     .max(50, "Project Tag must be at most 50 characters long")
     .optional(),
 
-  focusQuality: z.number()
+  focusQuality: z
+    .number()
     .min(1, "Focus quality must be at least 1")
-    .max(5, "Focus quality must be at most 5")   // ← was missing
+    .max(5, "Focus quality must be at most 5") // ← was missing
     .optional(),
 
-  ritualCompleted: z.boolean().optional(),        // ← was missing
-  ritualSkipped: z.boolean().optional(),        // ← was missing
+  ritualCompleted: z.boolean().optional(), // ← was missing
+  ritualSkipped: z.boolean().optional(), // ← was missing
 });
 
-export { registerUserPostValidator, loginUserPostValidator, changePasswordPostValidator, forgotPasswordPostValidator, resetPasswordPostValidator, createContextPostValidator, updateContextPatchValidator, createRitualPostValidator, updateRitualPatchValidator, createSwitchLogPostValidator, updateSwitchLogPatchValidator };
+export {
+  registerUserPostValidator,
+  loginUserPostValidator,
+  changePasswordPostValidator,
+  forgotPasswordPostValidator,
+  resetPasswordPostValidator,
+  createContextPostValidator,
+  updateContextPatchValidator,
+  createRitualPostValidator,
+  updateRitualPatchValidator,
+  createSwitchLogPostValidator,
+  updateSwitchLogPatchValidator,
+};

@@ -14,7 +14,10 @@ import {
 } from "../utils/emailUtils";
 import { ApiResponse } from "../utils/ApiResponse";
 import config from "../config/config";
-import { generateAccessAndRefreshToken, generateEmailVerifyToken } from "../utils/tokenUtils";
+import {
+  generateAccessAndRefreshToken,
+  generateEmailVerifyToken,
+} from "../utils/tokenUtils";
 import jwt from "jsonwebtoken";
 import type { DecodedJWTPayload } from "../middlewares/auth.middleware";
 import type { UserDocument } from "../types/common.types";
@@ -45,7 +48,9 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   } catch (error: unknown) {
     if (isMongoUniqueViolation(error)) {
-      const field = Object.keys((error as { keyPattern?: Record<string, unknown> })?.keyPattern ?? {})[0];
+      const field = Object.keys(
+        (error as { keyPattern?: Record<string, unknown> })?.keyPattern ?? {},
+      )[0];
       throw new ApiError({
         statusCode: 409,
         message: field
@@ -53,11 +58,15 @@ const registerUser = asyncHandler(async (req, res) => {
           : "User already exists!",
       });
     }
-    throw new ApiError({ statusCode: 500, message: "Problem while creating user" });
+    throw new ApiError({
+      statusCode: 500,
+      message: "Problem while creating user",
+    });
   }
 
-  const registeredUser = await User.findById(user._id)
-    .select("_id username email isEmailVerified");
+  const registeredUser = await User.findById(user._id).select(
+    "_id username email isEmailVerified",
+  );
 
   if (!registeredUser) {
     throw new ApiError({
@@ -95,10 +104,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
     });
   }
 
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   const user = await User.findOne({
     emailVerifyToken: hashedToken,
@@ -125,7 +131,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       {
         $set: { isEmailVerified: true },
         $unset: { emailVerifyToken: "", emailVerifyExpiry: "" },
-      }
+      },
     );
 
     logger.info("Email verified successfully", {
@@ -133,7 +139,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
         userId: user._id.toString(),
         email: user.email,
         requestId: req.headers["x-request-id"],
-      }
+      },
     });
 
     return res.status(200).json(
@@ -161,7 +167,9 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({
     email,
-  }).select("email username +emailVerifyToken +emailVerifyExpiry +verificationResendCount +verificationResendAt");
+  }).select(
+    "email username +emailVerifyToken +emailVerifyExpiry +verificationResendCount +verificationResendAt",
+  );
 
   if (!user) {
     return res.status(200).json(
@@ -169,7 +177,7 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
         statusCode: 200,
         message: "If that email exists, a verification link was sent.",
         data: null,
-      })
+      }),
     );
   }
 
@@ -187,7 +195,7 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
     Date.now() - user.verificationResendAt.getTime() < COOLDOWN_MS
   ) {
     const secondsLeft = Math.ceil(
-      (COOLDOWN_MS - (Date.now() - user.verificationResendAt.getTime())) / 1000
+      (COOLDOWN_MS - (Date.now() - user.verificationResendAt.getTime())) / 1000,
     );
     throw new ApiError({
       statusCode: 429,
@@ -215,7 +223,7 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
         verificationResendCount: user.verificationResendCount + 1,
         verificationResendAt: new Date(),
       },
-    }
+    },
   );
 
   await sendVerificationEmail(user, rawToken);
@@ -234,7 +242,7 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
       statusCode: 200,
       message: "Verification email resent",
       data: null,
-    })
+    }),
   );
 });
 
@@ -254,7 +262,7 @@ const loginUser = asyncHandler(async (req, res) => {
         userAgent: req.headers["user-agent"] ?? "unknown",
         requestId: req.headers["x-request-id"],
         security: true,
-      }
+      },
     });
 
     throw new ApiError({
@@ -276,7 +284,7 @@ const loginUser = asyncHandler(async (req, res) => {
         userAgent: req.headers["user-agent"] ?? "unknown",
         requestId: req.headers["x-request-id"],
         security: true,
-      }
+      },
     });
 
     throw new ApiError({
@@ -296,7 +304,7 @@ const loginUser = asyncHandler(async (req, res) => {
         userAgent: req.headers["user-agent"] ?? "unknown",
         requestId: req.headers["x-request-id"],
         security: true,
-      }
+      },
     });
 
     throw new ApiError({
@@ -323,12 +331,19 @@ const loginUser = asyncHandler(async (req, res) => {
     meta: {
       userId: user._id.toString(),
       requestId: req.headers["x-request-id"],
-    }
+    },
   });
 
-  res.status(200)
-    .cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 })
-    .cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
+  res
+    .status(200)
+    .cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    })
+    .cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
     .json(
       new ApiResponse({
         statusCode: 200,
@@ -399,7 +414,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
     const uploaded = await uploadOnCloudinary(
       avatarLocalFile.path,
-      "context-switcher/avatars"
+      "context-switcher/avatars",
     );
 
     if (!uploaded?.url) {
@@ -413,19 +428,17 @@ const updateProfile = asyncHandler(async (req, res) => {
     updateData.avatarPublicId = uploaded.public_id;
   }
 
-  const updatedUser = await User.findByIdAndUpdate(user._id,
-    updateData,
-    {
-      returnDocument: 'after', select: "_id username email avatar isEmailVerified createdAt"
-    }
-  );
+  const updatedUser = await User.findByIdAndUpdate(user._id, updateData, {
+    returnDocument: "after",
+    select: "_id username email avatar isEmailVerified createdAt",
+  });
 
   logger.info("Profile updated", {
     meta: {
       userId: user._id.toString(),
       requestId: req.headers["x-request-id"],
       fields: Object.keys(updateData), // log WHAT changed, not the values
-    }
+    },
   });
 
   res.status(200).json(
@@ -433,7 +446,7 @@ const updateProfile = asyncHandler(async (req, res) => {
       statusCode: 200,
       data: updatedUser,
       message: "Profile updated successfully",
-    })
+    }),
   );
 });
 
@@ -480,7 +493,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   let decoded: DecodedJWTPayload;
 
   try {
-    decoded = jwt.verify(token, config.REFRESH_TOKEN_SECRET) as DecodedJWTPayload;
+    decoded = jwt.verify(
+      token,
+      config.REFRESH_TOKEN_SECRET,
+    ) as DecodedJWTPayload;
   } catch (_jwtError) {
     // JWT errors are always auth failures — never 500
     // TokenExpiredError, JsonWebTokenError, NotBeforeError
@@ -521,8 +537,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         userId: user._id.toString(),
         ip: req.ip,
         requestId: req.headers["x-request-id"],
-      }
-
+      },
     });
 
     throw new ApiError({
@@ -545,21 +560,27 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     meta: {
       userId: user._id.toString(),
       requestId: req.headers["x-request-id"],
-    }
+    },
   });
 
   // FIX: Don't send tokens in the response body — they're already in cookies
   // Sending them in body means JS can read them → defeats httpOnly purpose
   res
     .status(200)
-    .cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 })
-    .cookie("refreshToken", newRefreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
+    .cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    })
+    .cookie("refreshToken", newRefreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
     .json(
       new ApiResponse({
         statusCode: 200,
         message: "Access token refreshed successfully",
         data: null, // ← tokens are in cookies, not body
-      })
+      }),
     );
 });
 
@@ -577,12 +598,15 @@ const forgotPassword = asyncHandler(async (req, res) => {
           statusCode: 200,
           message: "If that email exists, a reset link was sent.",
           data: null,
-        })
-      )
+        }),
+      );
     }
 
     const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
     // Password reset token generated (not logged for security)
     const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
@@ -650,13 +674,17 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 const changePassword = asyncHandler(async (req, res) => {
-  const { currentPassword, newPassword } = req.body as { currentPassword: string, newPassword: string };
+  const { currentPassword, newPassword } = req.body as {
+    currentPassword: string;
+    newPassword: string;
+  };
   const user = req.user as UserDocument;
 
   if (user.authProvider === "google") {
     throw new ApiError({
       statusCode: 400,
-      message: "Google accounts cannot use password change. Use Google account settings.",
+      message:
+        "Google accounts cannot use password change. Use Google account settings.",
     });
   }
 
@@ -669,16 +697,17 @@ const changePassword = asyncHandler(async (req, res) => {
     throw new ApiError({
       statusCode: 401,
       message: "Unauthorized",
-    })
+    });
   }
 
-  const isCurrentPasswordMatch = await userInfo?.isPasswordCorrect(currentPassword);
+  const isCurrentPasswordMatch =
+    await userInfo?.isPasswordCorrect(currentPassword);
 
   if (!isCurrentPasswordMatch) {
     throw new ApiError({
       statusCode: 400,
       message: "Invalid current password",
-    })
+    });
   }
 
   // Update password — pre-save hook hashes it automatically
@@ -699,10 +728,11 @@ const changePassword = asyncHandler(async (req, res) => {
     meta: {
       userId: user._id.toString(),
       requestId: req.headers["x-request-id"],
-    }
+    },
   });
 
-  res.status(200)
+  res
+    .status(200)
     .clearCookie("accessToken", cookieOptions)
     .clearCookie("refreshToken", cookieOptions)
     .json(
@@ -710,9 +740,9 @@ const changePassword = asyncHandler(async (req, res) => {
         statusCode: 200,
         message: "Password changed successfully",
         data: null,
-      })
+      }),
     );
-})
+});
 
 // OAuth
 const loginWithGoogle = asyncHandler(async (req, res) => {
@@ -725,38 +755,45 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
         meta: {
           ip: req.ip,
           requestId: req.headers["x-request-id"],
-        }
+        },
       });
       return res.redirect(`${config.CLIENT_URL}/login?error=oauth_failed`);
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id,
+    );
     // Access and refresh tokens generated (not logged for security)
 
     const cookieOptions: CookieOptions = {
       httpOnly: true,
       secure: config.NODE_ENV === "production",
       sameSite: "lax",
-    }
+    };
 
     logger.info("Google OAuth login", {
       meta: {
         userId: user._id.toString(),
         requestId: req.headers["x-request-id"],
-      }
+      },
     });
 
-    res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-    res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.redirect(`${config.CLIENT_URL}/panel/dashboard`);
-
   } catch (error) {
     logger.error("OAUTH_ERROR", {
       meta: {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      }
+        stack: error instanceof Error ? error.stack : undefined,
+      },
     });
     res.redirect(`${config.CLIENT_URL}/login?error=oauth_failed`);
   }

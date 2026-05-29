@@ -7,9 +7,8 @@ import {
   getTopContexts,
   getAvgFocusByContext,
   getSwitchPatterns,
-  getStreak
+  getStreak,
 } from "../controllers/analytics.controller";
-
 
 const router = Router();
 
@@ -62,9 +61,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/")
-  .get(verifyJWT, getAnalytics);
+router.route("/").get(verifyJWT, getAnalytics);
 
 /**
  * @swagger
@@ -138,9 +135,7 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/summary")
-  .get(verifyJWT, getSummary);
+router.route("/summary").get(verifyJWT, getSummary);
 
 /**
  * @swagger
@@ -191,9 +186,7 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/heatmap")
-  .get(verifyJWT, getHeatmap);
+router.route("/heatmap").get(verifyJWT, getHeatmap);
 
 /**
  * @swagger
@@ -265,9 +258,7 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/top-contexts")
-  .get(verifyJWT, getTopContexts);
+router.route("/top-contexts").get(verifyJWT, getTopContexts);
 
 /**
  * @swagger
@@ -316,9 +307,7 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/avg-focus")
-  .get(verifyJWT, getAvgFocusByContext);
+router.route("/avg-focus").get(verifyJWT, getAvgFocusByContext);
 
 /**
  * @swagger
@@ -367,9 +356,7 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/switch-patterns")
-  .get(verifyJWT, getSwitchPatterns);
+router.route("/switch-patterns").get(verifyJWT, getSwitchPatterns);
 
 /**
  * @swagger
@@ -415,8 +402,6 @@ router
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router
-  .route("/streak")
-  .get(verifyJWT, getStreak);
+router.route("/streak").get(verifyJWT, getStreak);
 
 export default router;
