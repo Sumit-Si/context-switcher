@@ -3,14 +3,14 @@ import { rateLimiterMongo } from "../config/rateLimiter";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/AsyncHandler";
 
-const rateLimit = asyncHandler(async (req, res, next) => {
+const rateLimit = asyncHandler(async (req, _res, next) => {
     if (config.NODE_ENV === "development") {
         return next();
     }
 
     if (rateLimiterMongo) {
         try {
-            await rateLimiterMongo.consume(req.ip as string, 1);
+            await rateLimiterMongo.consume(req.ip ?? req.socket?.remoteAddress ?? 'unknown', 1);
             next();
         } catch (error) {
             // rate-limiter-flexible rejects the promise when the limit is exceeded

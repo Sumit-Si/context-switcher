@@ -1,20 +1,22 @@
-import mongoose, { Schema, Types } from "mongoose";
+import type { Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import config from "../config/config";
 import bcrypt from "bcryptjs";
-import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import type { Secret, SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { AuthProviderEnum, AvailableAuthProviders } from "../constants";
 
-export type PreferenceProps = {
+export interface PreferenceProps {
   theme: "light" | "dark";
   workStartHour: number;
   workEndHour: number;
   notifications: boolean;
   defaultRitual: string;
-};
+}
 
 export type AuthProviderProps = "local" | "google";
 
-export type UserSchemaProps = {
+export interface UserSchemaProps {
   _id: Types.ObjectId;
   username: string;
   email: string;
@@ -36,7 +38,7 @@ export type UserSchemaProps = {
   generateAccessToken: () => string;
   generateRefreshToken: () => string;
   isPasswordCorrect: (password: string) => Promise<boolean>;
-};
+}
 
 const userSchema = new Schema<UserSchemaProps>(
   {
@@ -60,8 +62,8 @@ const userSchema = new Schema<UserSchemaProps>(
         return this.authProvider === "local";
       },
       trim: true,
-      min: [8, "Password must be at least 8 characters long"],
-      max: [20, "Password must be at most 20 characters long"],
+      minLength: [8, "Password must be at least 8 characters long"],
+      maxLength: [20, "Password must be at most 20 characters long"],
     },
     avatar: {
       type: String,
@@ -132,6 +134,10 @@ const userSchema = new Schema<UserSchemaProps>(
     timestamps: true,
   },
 );
+
+// Compound index for token lookups
+userSchema.index({ emailVerifyToken: 1, emailVerifyExpiry: 1 });
+userSchema.index({ passwordResetToken: 1, passwordResetExpiry: 1 });
 
 // Hooks
 userSchema.pre("save", async function () {

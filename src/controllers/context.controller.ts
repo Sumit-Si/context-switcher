@@ -1,5 +1,4 @@
-import { UserDocument } from "../types/common.types";
-import { ApiError } from "../utils/ApiError";
+import type { UserDocument } from "../types/common.types";
 import { asyncHandler } from "../utils/AsyncHandler";
 import { ApiResponse } from "../utils/ApiResponse";
 import logger from "../config/logger";
@@ -8,7 +7,7 @@ import { ContextService } from "../services/context.service";
 const contextService = new ContextService();
 
 
-type CreateContextReqBody = {
+interface CreateContextReqBody {
     name: string;
     description?: string;
     color?: string;
@@ -18,9 +17,9 @@ type CreateContextReqBody = {
     energyRequired?: string;
     musicSuggestion?: string;
     environmentNote?: string;
-};
+}
 
-type UpdateContextReqBody = {
+interface UpdateContextReqBody {
     name?: string;
     color?: string;
     description?: string;

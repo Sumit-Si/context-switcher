@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import Ritual from "../models/ritual.model";
-import { UserDocument } from "../types/common.types";
+import type { UserDocument } from "../types/common.types";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/AsyncHandler";
@@ -10,7 +10,7 @@ import { RitualService } from "../services/ritual.service";
 const ritualService = new RitualService();
 
 
-type CreateRitualRequestBody = {
+interface CreateRitualRequestBody {
     name: string;
     description?: string;
     ritualType: string;
@@ -25,9 +25,9 @@ type CreateRitualRequestBody = {
         fromContext?: string | null;
         toContext?: string | null;
     };
-};
+}
 
-type UpdateRitualRequestBody = {
+interface UpdateRitualRequestBody {
     name?: string;
     description?: string;
     steps?: Array<{
@@ -37,7 +37,7 @@ type UpdateRitualRequestBody = {
         audioFile?: string;
     }>;
     totalDuration?: number;
-};
+}
 
 const getAllRituals = asyncHandler(async (req, res) => {
     const { page = "1", limit = "10", sortBy = "createdAt", order = "desc" } = req.query;

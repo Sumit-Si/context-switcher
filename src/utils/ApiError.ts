@@ -1,7 +1,7 @@
-type ErrorDetail = {
+interface ErrorDetail {
   field?: string;
   message: string;
-};
+}
 
 export type ApiErrorCode =
   | "TOKEN_EXPIRED"
@@ -9,13 +9,13 @@ export type ApiErrorCode =
   | "UNAUTHORIZED"
   | "FORBIDDEN";
 
-type ApiErrorProps = {
+interface ApiErrorProps {
   statusCode: number;
   message: string;
   code?: ApiErrorCode;
   errors?: ErrorDetail[];
   stack?: string;
-};
+}
 
 class ApiError extends Error {
   public readonly statusCode: number;
@@ -29,7 +29,7 @@ class ApiError extends Error {
     statusCode,
     message = "Something went wrong",
     errors = [],
-    code = "UNAUTHORIZED",
+    code = undefined,
     stack = "",
   }: ApiErrorProps) {
     super(message);

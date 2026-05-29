@@ -2,9 +2,10 @@ import config from "../config/config";
 import User from "../models/user.model";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/AsyncHandler";
+import type {
+  JwtPayload} from "jsonwebtoken";
 import jwt, {
   JsonWebTokenError,
-  JwtPayload,
   TokenExpiredError,
 } from "jsonwebtoken";
 
@@ -14,7 +15,7 @@ export interface DecodedJWTPayload extends JwtPayload {
   exp: number;
 }
 
-const verifyJWT = asyncHandler(async (req, res, next) => {
+const verifyJWT = asyncHandler(async (req, _res, next) => {
   const token = req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
 
   if (!token) {

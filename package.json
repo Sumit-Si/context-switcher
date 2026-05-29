@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file=.env dist/index",
-    "dev": "tsc-watch --onSuccess \"pnpm start\"",
+    "dev": "tsc-watch -p tsconfig.build.json --onSuccess \"pnpm start\"",
     "format:check": "prettier . --check",
     "format:fix": "prettier . --fix",
     "lint": "eslint",

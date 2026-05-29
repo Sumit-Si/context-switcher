@@ -4,7 +4,7 @@ import dbConnect from "./config/db";
 import logger from "./config/logger";
 import { initRateLimiter } from "./config/rateLimiter";
 import mongoose from "mongoose";
-import { Server } from "http";
+import type { Server } from "http";
 
 const PORT = config.PORT;
 let server: Server;

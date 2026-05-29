@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { UserSchemaProps } from "../models/user.model";
+import type { UserSchemaProps } from "../models/user.model";
 import config from "../config/config";
 
 type UserProps = Pick<UserSchemaProps, "username" | "email">;

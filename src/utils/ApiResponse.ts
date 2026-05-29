@@ -1,8 +1,8 @@
-type ApiResponseProps<T> = {
+interface ApiResponseProps<T> {
   statusCode: number;
   data: T | null;
   message?: string;
-};
+}
 
 class ApiResponse<T = unknown> {
   public readonly statusCode: number;

@@ -1,5 +1,5 @@
 import { rateLimit } from "express-rate-limit";
-import { Connection } from "mongoose";
+import type { Connection } from "mongoose";
 import { RateLimiterMongo } from "rate-limiter-flexible";
 import config from "./config";
 import logger from "./logger";

@@ -1,4 +1,4 @@
-import { UserSchemaProps } from "../models/user.model";
+import type { UserSchemaProps } from "../models/user.model";
 
 export type CreateUserRequestBodyProps = Omit<
   UserSchemaProps,
@@ -10,16 +10,16 @@ export type LoginUserRequestBodyProps = Pick<
   "email" | "password"
 >;
 
-export type UpdateProfileRequestBodyProps = {
+export interface UpdateProfileRequestBodyProps {
   username?: string;
   email?: string;
 }
 
-export type CookieOptions = {
+export interface CookieOptions {
   httpOnly: boolean;
   secure: boolean;
   sameSite: "lax" | "strict" | "none";
   maxAge?: number;
-};
+}
 
 export type AuthProvider = "local" | "google";

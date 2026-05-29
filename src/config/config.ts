@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { WHITELIST_ORIGINS } from "../constants";
 
 const envSchema = z.object({
   PORT: z
@@ -89,7 +88,6 @@ if (!parsedEnv.success) {
 
 const config = {
   ...parsedEnv.data,
-  WHITELIST_ORIGINS,
 } as const;
 
 export type Config = typeof config;

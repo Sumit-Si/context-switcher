@@ -1,9 +1,10 @@
-import mongoose, { Schema, Types } from "mongoose";
+import type { Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { AvailableCognitiveLoads, AvailableEmotionalTones, AvailableEnergyLevels, CognitiveLoadEnum, EmotionalTonesEnum, EnergyLevelEnum } from "../constants";
-import { CognitiveLoad, EmotionalTone, EnergyLevel } from "../types/common.types";
+import type { CognitiveLoad, EmotionalTone, EnergyLevel } from "../types/common.types";
 
 
-export type ContextSchemaProps = {
+export interface ContextSchemaProps {
     userId: Types.ObjectId,
     name: string,
     color: string,

@@ -149,7 +149,7 @@ describe('Authentication API Integration Tests', () => {
             // Check that cookies are set
             const cookies = response.headers['set-cookie'];
             expect(cookies).toBeDefined();
-            const cookieArray = Array.isArray(cookies) ? cookies : [cookies as string];
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
             expect(cookieArray.some((cookie: string) => cookie.includes('accessToken'))).toBe(true);
             expect(cookieArray.some((cookie: string) => cookie.includes('refreshToken'))).toBe(true);
         });
@@ -233,7 +233,7 @@ describe('Authentication API Integration Tests', () => {
                 });
 
             const cookies = loginResponse.headers['set-cookie'];
-            const cookieArray = Array.isArray(cookies) ? cookies : [cookies as string];
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
             const refreshTokenCookie = cookieArray.find((cookie: string) =>
                 cookie.includes('refreshToken')
             );
@@ -243,7 +243,7 @@ describe('Authentication API Integration Tests', () => {
             // Now use refresh token to get new access token
             const response = await request(app)
                 .post('/api/v1/auth/refresh-access-token')
-                .set('Cookie', refreshTokenCookie!)
+                .set('Cookie', refreshTokenCookie)
                 .expect(200);
 
             expect(response.body.success).toBe(true);
@@ -252,7 +252,7 @@ describe('Authentication API Integration Tests', () => {
             // Check that new tokens are set in cookies
             const newCookies = response.headers['set-cookie'];
             expect(newCookies).toBeDefined();
-            const newCookieArray = Array.isArray(newCookies) ? newCookies : [newCookies as string];
+            const newCookieArray = Array.isArray(newCookies) ? newCookies : [newCookies];
             expect(newCookieArray.some((cookie: string) => cookie.includes('accessToken'))).toBe(true);
             expect(newCookieArray.some((cookie: string) => cookie.includes('refreshToken'))).toBe(true);
         });
@@ -406,7 +406,7 @@ describe('Authentication API Integration Tests', () => {
             // Check that cookies are cleared
             const cookies = response.headers['set-cookie'];
             expect(cookies).toBeDefined();
-            const cookieArray = Array.isArray(cookies) ? cookies : [cookies as string];
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
             expect(cookieArray.some((cookie: string) =>
                 cookie.includes('accessToken=;') || (cookie.includes('accessToken') && cookie.includes('Thu, 01 Jan 1970'))
             )).toBe(true);

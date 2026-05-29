@@ -1,13 +1,12 @@
-import { AuthProvider } from "./types/auth.types";
-import { CognitiveLoad, EmotionalTone, EnergyLevel, RitualType, StepType } from "./types/common.types";
+import config from "./config/config";
+import type { AuthProvider } from "./types/auth.types";
+import type { CognitiveLoad, EmotionalTone, EnergyLevel, RitualType, StepType } from "./types/common.types";
 
 type WhitelistOrigin = string[];
 
-export const WHITELIST_ORIGINS: WhitelistOrigin = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:3000",
-] as const;
+export const WHITELIST_ORIGINS: WhitelistOrigin = config.CLIENT_URL
+  ? [config.CLIENT_URL, "http://localhost:5173"]
+  : ["http://localhost:5173"];
 
 export const DB_NAME: string = "context-switcherDB";
 

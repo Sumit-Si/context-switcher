@@ -1,13 +1,12 @@
 import { asyncHandler } from "../utils/AsyncHandler";
 import { ApiResponse } from "../utils/ApiResponse";
-import { ApiError } from "../utils/ApiError";
-import { UserDocument } from "../types/common.types";
+import type { UserDocument } from "../types/common.types";
 import logger from "../config/logger";
 import { SwitchLogService } from "../services/switchLog.service";
 
 const switchLogService = new SwitchLogService();
 
-type CreateSwitchLogRequestBody = {
+interface CreateSwitchLogRequestBody {
     fromContext?: string | null;
     toContext: string;
     ritualId?: string | null;
@@ -17,14 +16,14 @@ type CreateSwitchLogRequestBody = {
     distraction?: string;
     notes?: string;
     projectTag?: string;
-};
+}
 
-type UpdateSwitchLogRequestBody = {
+interface UpdateSwitchLogRequestBody {
     focusQuality?: number;
     distraction?: string;
     notes?: string;
     projectTag?: string;
-};
+}
 
 const getAllSwitchLogs = asyncHandler(async (req, res) => {
     const { page = "1", limit = "10", sortBy = "startTime", order = "desc" } = req.query;
@@ -143,7 +142,7 @@ const getActiveSession = asyncHandler(async (req, res) => {
         }));
     }
 
-    res.status(200).json(new ApiResponse({
+    return res.status(200).json(new ApiResponse({
         statusCode: 200, message: "Active session fetched", data: switchLog,
     }));
 });

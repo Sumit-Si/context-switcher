@@ -85,7 +85,7 @@ app.use("/api/v1/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Context Switcher API Docs'
 }));
-app.get("/api/v1/docs.json", (req, res) => {
+app.get("/api/v1/docs.json", (_req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.send(swaggerSpec);
 });
@@ -99,8 +99,6 @@ app.use((req, res) => {
     data: null,
   });
 });
-
-console.log("hello");
 
 app.use(globalErrorHandler);
 

@@ -1,6 +1,8 @@
 import { Types } from 'mongoose';
-import Ritual, { RitualSchemaProps } from '../models/ritual.model';
-import { BaseService, PaginatedResult, PaginationOptions } from './base.service';
+import type { RitualSchemaProps } from '../models/ritual.model';
+import Ritual from '../models/ritual.model';
+import type { PaginatedResult, PaginationOptions } from './base.service';
+import { BaseService } from './base.service';
 import { ApiError } from '../utils/ApiError';
 
 export interface CreateRitualDTO {
@@ -107,7 +109,24 @@ export class RitualService extends BaseService<RitualSchemaProps> implements IRi
             };
         }
 
-        const ritual = await this.model.create(ritualData);
+        let ritual;
+        try {
+            ritual = await this.model.create(ritualData);
+        } catch (error: unknown) {
+            // MongoDB duplicate key error (unique index on name + userId)
+            if (
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                (error as { code: number }).code === 11000
+            ) {
+                throw new ApiError({
+                    statusCode: 409,
+                    message: 'A ritual with this name already exists'
+                });
+            }
+            throw error;
+        }
 
         return ritual.toObject();
     }

@@ -9,7 +9,7 @@ passport.use(new GoogleStrategy({
     clientID: config.GOOGLE_CLIENT_ID,
     clientSecret: config.GOOGLE_CLIENT_SECRET,
     callbackURL: config.GOOGLE_CALLBACK_URL,
-}, async (accessToken, refreshToken, profile, done) => {
+}, async (_accessToken, _refreshToken, profile, done) => {
     const email = profile.emails?.[0]?.value;
     const rawUserName = profile.displayName || `${profile.name?.givenName ?? ""} ${profile.name?.familyName ?? ""}`.trim() ||
         "user";
@@ -82,9 +82,9 @@ passport.use(new GoogleStrategy({
                 });
                 return done(null, retryUser);
             } catch (retryError) {
-                return done(retryError as Error);
+                return done(retryError);
             }
         }
-        return done(error as Error);
+        return done(error);
     }
 }));

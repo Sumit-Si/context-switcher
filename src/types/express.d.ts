@@ -1,4 +1,4 @@
-import { UserDocument } from "./common.types";
+import type { UserDocument } from "./common.types";
 
 declare global {
   namespace Express {

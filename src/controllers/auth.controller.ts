@@ -1,5 +1,5 @@
 import User from "../models/user.model";
-import {
+import type {
   CookieOptions,
   CreateUserRequestBodyProps,
   LoginUserRequestBodyProps,
@@ -16,8 +16,8 @@ import { ApiResponse } from "../utils/ApiResponse";
 import config from "../config/config";
 import { generateAccessAndRefreshToken, generateEmailVerifyToken } from "../utils/tokenUtils";
 import jwt from "jsonwebtoken";
-import { DecodedJWTPayload } from "../middlewares/auth.middleware";
-import { UserDocument } from "../types/common.types";
+import type { DecodedJWTPayload } from "../middlewares/auth.middleware";
+import type { UserDocument } from "../types/common.types";
 import logger from "../config/logger";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../config/cloudinary";
 import { isMongoUniqueViolation } from "../utils/usernameUtils";
@@ -36,44 +36,16 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
+  let user;
   try {
-    const user = await User.create({
+    user = await User.create({
       username,
       email,
       password,
     });
-
-    const registeredUser = await User.findById(user._id)
-      .select("_id username email isEmailVerified");
-
-    if (!registeredUser) {
-      throw new ApiError({
-        statusCode: 400,
-        message: "Problem while creating user",
-      });
-    }
-
-    const { rawToken, hashedToken, expiry } = generateEmailVerifyToken();
-    // Email verification token generated (not logged for security)
-
-    user.emailVerifyToken = hashedToken;
-    user.emailVerifyExpiry = expiry;
-    await user.save();
-
-    // send mail
-    await sendVerificationEmail(user, rawToken);
-
-    res.status(201).json(
-      new ApiResponse({
-        statusCode: 201,
-        data: registeredUser,
-        message: "User created successfully",
-      }),
-    );
-
-  } catch (error: any) {
-    if (isMongoUniqueViolation(error) && error?.code === 11000) {
-      const field = Object.keys(error?.keyPattern ?? {})[0]; // "username" | "email"
+  } catch (error: unknown) {
+    if (isMongoUniqueViolation(error)) {
+      const field = Object.keys((error as { keyPattern?: Record<string, unknown> })?.keyPattern ?? {})[0];
       throw new ApiError({
         statusCode: 409,
         message: field
@@ -83,6 +55,34 @@ const registerUser = asyncHandler(async (req, res) => {
     }
     throw new ApiError({ statusCode: 500, message: "Problem while creating user" });
   }
+
+  const registeredUser = await User.findById(user._id)
+    .select("_id username email isEmailVerified");
+
+  if (!registeredUser) {
+    throw new ApiError({
+      statusCode: 500,
+      message: "Problem while creating user",
+    });
+  }
+
+  const { rawToken, hashedToken, expiry } = generateEmailVerifyToken();
+
+  user.emailVerifyToken = hashedToken;
+  user.emailVerifyExpiry = expiry;
+  // validateBeforeSave:false — user.password is now the bcrypt hash (60 chars)
+  // which would fail the schema's maxlength:20 raw-password validator on re-save
+  await user.save({ validateBeforeSave: false });
+
+  await sendVerificationEmail(user, rawToken);
+
+  res.status(201).json(
+    new ApiResponse({
+      statusCode: 201,
+      data: registeredUser,
+      message: "User created successfully",
+    }),
+  );
 });
 
 const verifyEmail = asyncHandler(async (req, res) => {
@@ -136,7 +136,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       }
     });
 
-    res.status(200).json(
+    return res.status(200).json(
       new ApiResponse({
         statusCode: 200,
         data: {
@@ -148,7 +148,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
         message: "Email verified successfully",
       }),
     );
-  } catch (error) {
+  } catch (_error) {
     throw new ApiError({
       statusCode: 500,
       message: "Problem while verifying email",
@@ -229,7 +229,7 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
     },
   });
 
-  res.status(200).json(
+  return res.status(200).json(
     new ApiResponse({
       statusCode: 200,
       message: "Verification email resent",
@@ -344,7 +344,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const profile = asyncHandler(async (req, res) => {
   const user = req.user;
-  res.status(200).json(
+  return res.status(200).json(
     new ApiResponse({
       statusCode: 200,
       data: user,
@@ -481,7 +481,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
   try {
     decoded = jwt.verify(token, config.REFRESH_TOKEN_SECRET) as DecodedJWTPayload;
-  } catch (jwtError) {
+  } catch (_jwtError) {
     // JWT errors are always auth failures — never 500
     // TokenExpiredError, JsonWebTokenError, NotBeforeError
     throw new ApiError({
@@ -592,14 +592,14 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     await sendPasswordResetEmail(user, rawToken);
 
-    res.status(200).json(
+    return res.status(200).json(
       new ApiResponse({
         statusCode: 200,
         message: "Password reset mail sent successfully",
         data: null,
       }),
     );
-  } catch (error) {
+  } catch (_error) {
     throw new ApiError({
       statusCode: 500,
       message: "Problem while sending reset email",

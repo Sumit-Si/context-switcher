@@ -1,14 +1,14 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import config from "../config/config";
 import { ApiError } from "./ApiError";
 import logger from "../config/logger";
-import { UserDocument } from "../types/common.types";
+import type { UserDocument } from "../types/common.types";
 
 const globalErrorHandler = (
   error: unknown,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
   const isProd = config.NODE_ENV === "production";
   const user = req.user as UserDocument | undefined;

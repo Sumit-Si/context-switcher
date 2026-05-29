@@ -128,12 +128,12 @@ describe('Context API Integration Tests', () => {
                 .send(contextData)
                 .expect(201);
 
-            // Try to create duplicate - expect 400 for duplicate error
+            // Try to create duplicate - expect 409 Conflict
             const response = await request(app)
                 .post('/api/v1/contexts')
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(contextData)
-                .expect(400);
+                .expect(409);
 
             expect(response.body.success).toBe(false);
         });

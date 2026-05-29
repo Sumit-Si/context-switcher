@@ -1,6 +1,8 @@
 import { Types } from 'mongoose';
-import SwitchLog, { SwitchLogSchemaProps } from '../models/switchLog.model';
-import { BaseService, PaginatedResult, PaginationOptions } from './base.service';
+import type { SwitchLogSchemaProps } from '../models/switchLog.model';
+import SwitchLog from '../models/switchLog.model';
+import type { PaginatedResult, PaginationOptions } from './base.service';
+import { BaseService } from './base.service';
 import { ApiError } from '../utils/ApiError';
 import Context from '../models/context.model';
 

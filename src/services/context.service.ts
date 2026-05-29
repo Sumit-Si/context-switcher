@@ -1,6 +1,8 @@
 import { Types } from 'mongoose';
-import Context, { ContextSchemaProps } from '../models/context.model';
-import { BaseService, PaginatedResult, PaginationOptions } from './base.service';
+import type { ContextSchemaProps } from '../models/context.model';
+import Context from '../models/context.model';
+import type { PaginatedResult, PaginationOptions } from './base.service';
+import { BaseService } from './base.service';
 import { ApiError } from '../utils/ApiError';
 
 export interface CreateContextDTO {

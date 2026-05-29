@@ -1,10 +1,11 @@
-import mongoose, { Schema, Types } from "mongoose";
+import type { Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { AvailableRitualTypes, AvailableStepTypes, RitualTypeEnum, StepTypeEnum } from "../constants";
-import { RitualType, StepsProps, TargetTransitionProps } from "../types/common.types";
+import type { RitualType, StepsProps, TargetTransitionProps } from "../types/common.types";
 
 
 
-export type RitualSchemaProps = {
+export interface RitualSchemaProps {
     userId: Types.ObjectId;
     name: string;
     description?: string;

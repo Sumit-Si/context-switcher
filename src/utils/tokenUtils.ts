@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import type { Types } from "mongoose";
 import { ApiError } from "./ApiError";
 import User from "../models/user.model";
 import crypto from "crypto";

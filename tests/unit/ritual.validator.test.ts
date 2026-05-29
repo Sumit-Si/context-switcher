@@ -82,7 +82,7 @@ describe('Ritual Validators', () => {
 
         describe('description validation', () => {
             it('should accept optional description', () => {
-                const { description, ...dataWithoutDescription } = validRitualData;
+                const { description: _description, ...dataWithoutDescription } = validRitualData;
                 const result = createRitualPostValidator.safeParse(dataWithoutDescription);
                 expect(result.success).toBe(true);
             });
@@ -131,7 +131,7 @@ describe('Ritual Validators', () => {
             });
 
             it('should default to "custom" if not provided', () => {
-                const { ritualType, ...dataWithoutType } = validRitualData;
+                const { ritualType: _ritualType, ...dataWithoutType } = validRitualData;
                 const result = createRitualPostValidator.safeParse(dataWithoutType);
 
                 expect(result.success).toBe(true);
@@ -336,7 +336,7 @@ describe('Ritual Validators', () => {
 
         describe('targetTransition validation', () => {
             it('should accept optional targetTransition', () => {
-                const { targetTransition, ...dataWithoutTransition } = validRitualData;
+                const { targetTransition: _targetTransition, ...dataWithoutTransition } = validRitualData;
                 const result = createRitualPostValidator.safeParse(dataWithoutTransition);
                 expect(result.success).toBe(true);
             });
@@ -360,7 +360,7 @@ describe('Ritual Validators', () => {
             });
 
             it('should default to empty object if not provided', () => {
-                const { targetTransition, ...dataWithoutTransition } = validRitualData;
+                const { targetTransition: _targetTransition, ...dataWithoutTransition } = validRitualData;
                 const result = createRitualPostValidator.safeParse(dataWithoutTransition);
 
                 expect(result.success).toBe(true);

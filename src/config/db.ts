@@ -1,4 +1,4 @@
-import mongoose, { connection } from "mongoose";
+import mongoose from "mongoose";
 import config from "../config/config";
 import { DB_NAME } from "../constants";
 import logger from "./logger";

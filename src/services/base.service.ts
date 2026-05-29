@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import type { Model } from 'mongoose';
 import { ApiError } from '../utils/ApiError';
 
 export interface PaginationOptions {
@@ -35,8 +35,8 @@ export abstract class BaseService<T> {
 
     protected async softDelete(id: string, userId: string): Promise<void> {
         const result = await this.model.findOneAndUpdate(
-            { _id: id, userId, deletedAt: null } as any,
-            { deletedAt: new Date() } as any,
+            { _id: id, userId, deletedAt: null },
+            { deletedAt: new Date() },
             { returnDocument: 'after' }
         );
 

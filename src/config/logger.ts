@@ -1,12 +1,12 @@
 import { createLogger, format, transports } from "winston";
 import "winston-mongodb";
-import { ConsoleTransportInstance, FileTransportInstance } from "winston/lib/winston/transports";
+import type { ConsoleTransportInstance, FileTransportInstance } from "winston/lib/winston/transports";
 import util from "util";
 import config from "./config";
 import path from "path";
 import * as sourceMapSupport from "source-map-support";
 import { blue, green, magenta, red, yellow } from "colorette";
-import { MongoDBTransportInstance } from "winston-mongodb";
+import type { MongoDBTransportInstance } from "winston-mongodb";
 
 
 // Linking source map support
@@ -66,13 +66,13 @@ const consoleTransport = (): Array<ConsoleTransportInstance> => {
     ];
 }
 
-// @ts-ignore
+// @ts-expect-error - Winston format.printf types are incomplete
 const fileLogFormat = format.printf((info) => {
     const { level, message, timestamp, meta = {} } = info;
 
     const logMeta: Record<string, unknown> = {};
 
-    // @ts-ignore
+    // @ts-expect-error - meta type is not properly inferred
     for (const [key, value] of Object.entries(meta)) {
         if (value instanceof Error) {
             logMeta[key] = {
