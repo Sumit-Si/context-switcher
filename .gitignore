@@ -146,3 +146,6 @@ context-switcher-docs
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Docs
+docs

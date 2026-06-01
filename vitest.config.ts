@@ -1,5 +1,11 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
+import fs from "fs";
+import util from "util";
+
+const envTest = util.parseEnv(
+  fs.readFileSync(path.resolve(__dirname, ".env.test"), "utf8"),
+);
 
 export default defineConfig({
   test: {
@@ -11,9 +17,9 @@ export default defineConfig({
 
     // Environment variables (loaded from .env.test automatically)
     env: {
+      ...envTest,
       NODE_ENV: "test",
     },
-
     // Coverage configuration
     coverage: {
       provider: "v8",
@@ -48,7 +54,6 @@ export default defineConfig({
         statements: 70,
         autoUpdate: false, // Don't auto-update thresholds
       },
-      all: true, // Include all files, not just tested ones
       skipFull: false, // Show files with 100% coverage
     },
 
@@ -68,12 +73,6 @@ export default defineConfig({
     // Isolation
     isolate: true, // Run tests in isolation
     pool: "forks", // Use forks for better isolation
-    poolOptions: {
-      forks: {
-        singleFork: false, // Allow parallel execution
-      },
-    },
-
     // Retry failed tests in CI
     retry: process.env.CI ? 2 : 0,
 

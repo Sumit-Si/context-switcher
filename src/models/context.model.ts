@@ -98,7 +98,11 @@ const contextSchema = new Schema<ContextSchemaProps>(
   },
 );
 
-contextSchema.index({ userId: 1, name: 1 }, { unique: true });
+// Indexes
+contextSchema.index(
+  { userId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
 contextSchema.index({ userId: 1, deletedAt: 1 });
 contextSchema.index({ userId: 1, createdAt: -1 });
 contextSchema.index({ name: "text", description: "text" }); // Text search

@@ -80,11 +80,12 @@ const envSchema = z.object({
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  process.stderr.write("❌ Invalid environment variables:\n");
-  process.stderr.write(
-    JSON.stringify(parsedEnv.error.flatten().fieldErrors, null, 2) + "\n",
-  );
-  process.exit(1);
+  const errorMsg =
+    "❌ Invalid environment variables:\n" +
+    JSON.stringify(parsedEnv.error.flatten().fieldErrors, null, 2);
+  // Throw an error instead of process.exit(1) so that test runners like vitest
+  // can catch and report it properly instead of terminating the worker process abruptly.
+  throw new Error(errorMsg);
 }
 
 const config = {

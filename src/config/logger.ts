@@ -65,14 +65,12 @@ const consoleTransport = (): Array<ConsoleTransportInstance> => {
   ];
 };
 
-// @ts-expect-error - Winston format.printf types are incomplete
 const fileLogFormat = format.printf((info) => {
   const { level, message, timestamp, meta = {} } = info;
 
   const logMeta: Record<string, unknown> = {};
 
-  // @ts-expect-error - meta type is not properly inferred
-  for (const [key, value] of Object.entries(meta)) {
+  for (const [key, value] of Object.entries(meta as Record<string, unknown>)) {
     if (value instanceof Error) {
       logMeta[key] = {
         name: value.name,
@@ -82,16 +80,16 @@ const fileLogFormat = format.printf((info) => {
     } else {
       logMeta[key] = value;
     }
-
-    const logData = {
-      level: level.toUpperCase(),
-      message,
-      timestamp,
-      meta: logMeta,
-    };
-
-    return JSON.stringify(logData, null, 4);
   }
+
+  const logData = {
+    level: level.toUpperCase(),
+    message,
+    timestamp,
+    meta: logMeta,
+  };
+
+  return JSON.stringify(logData, null, 4);
 });
 
 const fileTransport = (): Array<FileTransportInstance> => {

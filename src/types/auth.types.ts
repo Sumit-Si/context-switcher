@@ -1,8 +1,8 @@
 import type { UserSchemaProps } from "../models/user.model";
 
-export type CreateUserRequestBodyProps = Omit<
+export type CreateUserRequestBodyProps = Pick<
   UserSchemaProps,
-  "avatar" | "refreshToken"
+  "username" | "email" | "password"
 >;
 
 export type LoginUserRequestBodyProps = Pick<
@@ -20,6 +20,7 @@ export interface CookieOptions {
   secure: boolean;
   sameSite: "lax" | "strict" | "none";
   maxAge?: number;
+  path: string;
 }
 
 export type AuthProvider = "local" | "google";
