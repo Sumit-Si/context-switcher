@@ -15,23 +15,29 @@ import config from "../config/config";
 import type { DecodedJWTPayload } from "../middlewares/auth.middleware";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../config/cloudinary";
 import { isMongoUniqueViolation } from "../utils/usernameUtils";
+import { AUTH_CONSTANTS } from "../constants";
 import type {
-  CreateUserRequestBodyProps,
-  LoginUserRequestBodyProps,
-  UpdateProfileRequestBodyProps,
-} from "../types/auth.types";
+  RegisterUserPostValidator,
+  LoginUserPostValidator,
+  UpdatePreferencesPatchValidator,
+  UpdateProfilePatchValidator,
+} from "../validators";
 
 export interface IAuthService {
-  register(data: CreateUserRequestBodyProps): Promise<UserDocument>;
+  register(data: RegisterUserPostValidator): Promise<UserDocument>;
   verifyEmail(token: string): Promise<UserDocument>;
   resendVerificationEmail(email: string): Promise<void>;
   login(
-    data: LoginUserRequestBodyProps,
+    data: LoginUserPostValidator,
   ): Promise<{ user: UserDocument; accessToken: string; refreshToken: string }>;
   updateProfile(
     userId: string,
-    data: UpdateProfileRequestBodyProps,
+    data: UpdateProfilePatchValidator,
     avatarLocalPath?: string,
+  ): Promise<UserDocument>;
+  updatePreferences(
+    userId: string,
+    preferences: UpdatePreferencesPatchValidator,
   ): Promise<UserDocument>;
   logout(userId: string): Promise<void>;
   refreshTokens(
@@ -47,7 +53,7 @@ export interface IAuthService {
 }
 
 export class AuthService implements IAuthService {
-  async register(data: CreateUserRequestBodyProps): Promise<UserDocument> {
+  async register(data: RegisterUserPostValidator): Promise<UserDocument> {
     const { username, email, password } = data;
 
     const existingUser = await User.findOne({
@@ -160,7 +166,7 @@ export class AuthService implements IAuthService {
       });
     }
 
-    const COOLDOWN_MS = 60 * 1000;
+    const COOLDOWN_MS = AUTH_CONSTANTS.EMAIL_VERIFY_COOLDOWN_MS;
     if (
       user.verificationResendAt &&
       Date.now() - user.verificationResendAt.getTime() < COOLDOWN_MS
@@ -175,7 +181,7 @@ export class AuthService implements IAuthService {
       });
     }
 
-    const MAX_RESENDS = 5;
+    const MAX_RESENDS = AUTH_CONSTANTS.MAX_VERIFICATION_RESENDS;
     if (user.verificationResendCount >= MAX_RESENDS) {
       throw new ApiError({
         statusCode: 429,
@@ -200,7 +206,7 @@ export class AuthService implements IAuthService {
     await sendVerificationEmail(user, rawToken);
   }
 
-  async login(data: LoginUserRequestBodyProps): Promise<{
+  async login(data: LoginUserPostValidator): Promise<{
     user: UserDocument;
     accessToken: string;
     refreshToken: string;
@@ -249,7 +255,7 @@ export class AuthService implements IAuthService {
 
   async updateProfile(
     userId: string,
-    data: UpdateProfileRequestBodyProps,
+    data: UpdateProfilePatchValidator,
     avatarLocalPath?: string,
   ): Promise<UserDocument> {
     const { username, email } = data;
@@ -314,6 +320,33 @@ export class AuthService implements IAuthService {
       returnDocument: "after",
       select: "_id username email avatar isEmailVerified createdAt",
     });
+
+    return updatedUser!;
+  }
+
+  async updatePreferences(
+    userId: string,
+    preferences: UpdatePreferencesPatchValidator,
+  ): Promise<UserDocument> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError({ statusCode: 404, message: "User not found" });
+    }
+
+    // Atomic update using dot notation to avoid overwriting the entire preferences object
+    const updateData: Record<string, unknown> = {};
+    Object.entries(preferences).forEach(([key, value]) => {
+      updateData[`preferences.${key}`] = value;
+    });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      {
+        returnDocument: "after",
+        select: "_id username email avatar preferences isEmailVerified",
+      },
+    );
 
     return updatedUser!;
   }
@@ -386,7 +419,9 @@ export class AuthService implements IAuthService {
       .update(rawToken)
       .digest("hex");
 
-    const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    const tokenExpiry = new Date(
+      Date.now() + AUTH_CONSTANTS.PASSWORD_RESET_TOKEN_TTL_MS,
+    );
 
     user.passwordResetToken = hashedToken;
     user.passwordResetExpiry = tokenExpiry;

@@ -113,6 +113,47 @@ const resetPasswordPostValidator = z.object({
     .trim(),
 });
 
+const updateProfilePatchValidator = z
+  .object({
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters long")
+      .max(20, "Username must be at most 20 characters long")
+      .regex(
+        /^[a-zA-Z0-9_]+$/,
+        "Username must contains only letters, numbers and underscores",
+      )
+      .trim()
+      .optional(),
+    email: z
+      .email()
+      .max(100, "Email must be at most 100 characters long")
+      .lowercase("Email must be in lowercase")
+      .trim()
+      .optional(),
+  })
+  .refine((data) => data.username || data.email, {
+    message: "At least one field (username or email) must be provided",
+  });
+
+const updatePreferencesPatchValidator = z
+  .object({
+    theme: z.enum(["light", "dark"]).optional(),
+    workStartHour: z.number().min(0).max(23).optional(),
+    workEndHour: z.number().min(0).max(23).optional(),
+    notifications: z.boolean().optional(),
+    defaultRitual: z.string().min(1).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.workStartHour !== undefined && data.workEndHour !== undefined) {
+        return data.workStartHour < data.workEndHour;
+      }
+      return true;
+    },
+    { message: "workStartHour must be less than workEndHour" },
+  );
+
 // Context Validators
 const createContextPostValidator = z.object({
   name: z
@@ -319,6 +360,8 @@ export {
   changePasswordPostValidator,
   forgotPasswordPostValidator,
   resetPasswordPostValidator,
+  updateProfilePatchValidator,
+  updatePreferencesPatchValidator,
   createContextPostValidator,
   updateContextPatchValidator,
   createRitualPostValidator,
@@ -326,3 +369,42 @@ export {
   createSwitchLogPostValidator,
   updateSwitchLogPatchValidator,
 };
+
+// Inferred Types
+export type RegisterUserPostValidator = z.infer<
+  typeof registerUserPostValidator
+>;
+export type LoginUserPostValidator = z.infer<typeof loginUserPostValidator>;
+export type ChangePasswordPostValidator = z.infer<
+  typeof changePasswordPostValidator
+>;
+export type ForgotPasswordPostValidator = z.infer<
+  typeof forgotPasswordPostValidator
+>;
+export type ResetPasswordPostValidator = z.infer<
+  typeof resetPasswordPostValidator
+>;
+export type UpdateProfilePatchValidator = z.infer<
+  typeof updateProfilePatchValidator
+>;
+export type UpdatePreferencesPatchValidator = z.infer<
+  typeof updatePreferencesPatchValidator
+>;
+export type CreateContextPostValidator = z.infer<
+  typeof createContextPostValidator
+>;
+export type UpdateContextPatchValidator = z.infer<
+  typeof updateContextPatchValidator
+>;
+export type CreateRitualPostValidator = z.infer<
+  typeof createRitualPostValidator
+>;
+export type UpdateRitualPatchValidator = z.infer<
+  typeof updateRitualPatchValidator
+>;
+export type CreateSwitchLogPostValidator = z.infer<
+  typeof createSwitchLogPostValidator
+>;
+export type UpdateSwitchLogPatchValidator = z.infer<
+  typeof updateSwitchLogPatchValidator
+>;

@@ -2,6 +2,7 @@ import type { Types } from "mongoose";
 import { ApiError } from "./ApiError";
 import User from "../models/user.model";
 import crypto from "crypto";
+import { AUTH_CONSTANTS } from "../constants";
 
 const generateAccessAndRefreshToken = async (
   userId: Types.ObjectId | string,
@@ -30,7 +31,7 @@ const generateEmailVerifyToken = () => {
   return {
     rawToken, // → send this in the email link
     hashedToken, // → store this in DB
-    expiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h from now
+    expiry: new Date(Date.now() + AUTH_CONSTANTS.EMAIL_VERIFY_TOKEN_TTL_MS), // 24h from now
   };
 };
 

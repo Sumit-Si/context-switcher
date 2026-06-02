@@ -11,6 +11,7 @@ import {
   loginWithGoogle,
   resendVerificationEmail,
   updateProfile,
+  updatePreferences,
   changePassword,
 } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate.middleware";
@@ -20,6 +21,8 @@ import {
   loginUserPostValidator,
   registerUserPostValidator,
   resetPasswordPostValidator,
+  updatePreferencesPatchValidator,
+  updateProfilePatchValidator,
 } from "../validators";
 import { verifyJWT } from "../middlewares/auth.middleware";
 import passport from "passport";
@@ -362,7 +365,20 @@ router.route("/me").get(verifyJWT, profile);
  */
 router
   .route("/update-profile")
-  .patch(verifyJWT, upload.single("avatar"), updateProfile);
+  .patch(
+    verifyJWT,
+    upload.single("avatar"),
+    validate(updateProfilePatchValidator),
+    updateProfile,
+  );
+
+router
+  .route("/update-preferences")
+  .patch(
+    verifyJWT,
+    validate(updatePreferencesPatchValidator),
+    updatePreferences,
+  );
 
 /**
  * @swagger

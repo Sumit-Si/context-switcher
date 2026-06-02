@@ -5,12 +5,18 @@ import SwitchLog from "../models/switchLog.model";
 // Shared base types
 export type TimeRange = "day" | "week" | "month" | "all";
 
+export interface UserPreferences {
+  workStartHour: number;
+  workEndHour: number;
+}
+
 // For the public-facing entry point
 export interface AnalyticsRequestParams {
   userId: Types.ObjectId;
   from?: Date | null;
   to?: Date | null;
   timeRange: TimeRange;
+  preferences?: UserPreferences;
 }
 
 // For internal helpers that receive a resolved date range
@@ -18,6 +24,10 @@ interface DateRangeParams {
   userId: Types.ObjectId;
   from: Date;
   to: Date;
+}
+
+interface DateRangeWithPrefsParams extends DateRangeParams {
+  preferences?: UserPreferences;
 }
 
 // Return type of getDateRange
@@ -56,9 +66,6 @@ const DifficultyEnum = {
   Easy: "easy",
 } as const;
 
-// Unused but kept for future use
-// const AvailableDifficulties = Object.values(DifficultyEnum) as readonly Difficulty[];
-
 interface ContextPerformanceRow {
   contextId: string;
   name: string;
@@ -86,6 +93,7 @@ interface InsightInput {
   contextPerformance: ContextPerformanceRow[];
   contextSwitches: ContextSwitchRow[];
   focusScoreChange: number;
+  preferences?: UserPreferences;
 }
 
 // Convert timeRange string to date range
@@ -125,6 +133,7 @@ export const getDateRange = (timeRange: TimeRange): DateRange => {
 export const computeAnalytics = async ({
   userId,
   timeRange,
+  preferences,
 }: AnalyticsRequestParams) => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
   const { from, to, previousFrom, previousTo } = getDateRange(timeRange);
@@ -145,7 +154,7 @@ export const computeAnalytics = async ({
     getContextPerformance({ userId: userObjectId, from, to }),
     getContextSwitches({ userId: userObjectId, from, to }),
     getFocusTrendData({ userId: userObjectId, from, to }),
-    getTimeOfDayData({ userId: userObjectId, from, to }),
+    getTimeOfDayData({ userId: userObjectId, from, to, preferences }),
   ]);
 
   // Compute focus score change vs previous period
@@ -161,6 +170,7 @@ export const computeAnalytics = async ({
     contextPerformance,
     contextSwitches,
     focusScoreChange,
+    preferences,
   });
 
   return {
@@ -471,13 +481,21 @@ const getFocusTrendData = async ({ userId, from, to }: DateRangeParams) => {
 // ─────────────────────────────────────────────
 // TIME OF DAY DATA — hour buckets
 // ─────────────────────────────────────────────
-const getTimeOfDayData = async ({ userId, from, to }: DateRangeParams) => {
+const getTimeOfDayData = async ({
+  userId,
+  from,
+  to,
+  preferences,
+}: DateRangeWithPrefsParams) => {
   const slots = [
+    { label: "12am – 3am", start: 0, end: 3 },
+    { label: "3am – 6am", start: 3, end: 6 },
     { label: "6am – 9am", start: 6, end: 9 },
     { label: "9am – 12pm", start: 9, end: 12 },
     { label: "12pm – 3pm", start: 12, end: 15 },
     { label: "3pm – 6pm", start: 15, end: 18 },
     { label: "6pm – 9pm", start: 18, end: 21 },
+    { label: "9pm – 12am", start: 21, end: 24 },
   ];
 
   const results = await SwitchLog.aggregate([
@@ -506,26 +524,40 @@ const getTimeOfDayData = async ({ userId, from, to }: DateRangeParams) => {
     hourMap[r._id] = Math.round(r.avgFocus);
   });
 
-  return slots
-    .map((slot) => {
-      // Average all hours in this slot
-      const hours = [];
-      for (let h = slot.start; h < slot.end; h++) {
-        if (hourMap[h] !== undefined) hours.push(hourMap[h]);
-      }
-      const focus =
-        hours.length > 0
-          ? Math.round(hours.reduce((a, b) => a + b, 0) / hours.length)
-          : 0;
+  const finalSlots = slots.map((slot) => {
+    // Average all hours in this slot
+    const hours = [];
+    for (let h = slot.start; h < slot.end; h++) {
+      if (hourMap[h] !== undefined) hours.push(hourMap[h]);
+    }
+    const focus =
+      hours.length > 0
+        ? Math.round(hours.reduce((a, b) => a + b, 0) / hours.length)
+        : 0;
 
-      // A slot is "optimal" if it's in the top 2 focus scores
-      return { time: slot.label, focus, sessions: hours.length };
-    })
-    .map((slot, _idx, arr) => {
-      const sorted = [...arr].sort((a, b) => b.focus - a.focus);
-      const topTwo = new Set(sorted.slice(0, 2).map((s) => s.time));
-      return { ...slot, optimal: topTwo.has(slot.time) };
-    });
+    // Determine if this slot is part of work hours
+    let isWorkHour = false;
+    if (preferences) {
+      const { workStartHour, workEndHour } = preferences;
+      // Overlap logic: [start, end) overlaps with [workStartHour, workEndHour)
+      isWorkHour = slot.start < workEndHour && slot.end > workStartHour;
+    }
+
+    return {
+      time: slot.label,
+      focus,
+      sessions: hours.length,
+      isWorkHour,
+    };
+  });
+
+  // Find the slot with max focus
+  const maxFocus = Math.max(...finalSlots.map((s) => s.focus));
+
+  return finalSlots.map((s) => ({
+    ...s,
+    optimal: maxFocus > 0 && s.focus === maxFocus,
+  }));
 };
 
 // ─────────────────────────────────────────────
@@ -536,6 +568,7 @@ const generateInsights = ({
   contextPerformance,
   contextSwitches,
   focusScoreChange,
+  preferences,
 }: InsightInput) => {
   const insights: Insight[] = [];
 
@@ -601,6 +634,20 @@ const generateInsights = ({
         action: "Get ritual",
       });
     }
+  }
+
+  // Insight 5: Work-Life Balance (New Smart Insight)
+  if (preferences) {
+    // We could add logic here to detect if focus is higher outside work hours
+    // or if the user is working too late.
+    // For now, let's just acknowledge their custom work hours.
+    insights.push({
+      type: "tip",
+      icon: "⏰",
+      title: "Optimized for Your Schedule",
+      description: `Analytics are now tuned to your ${preferences.workStartHour}:00 – ${preferences.workEndHour}:00 work day.`,
+      action: "Update hours",
+    });
   }
 
   return insights;

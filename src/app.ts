@@ -15,6 +15,13 @@ const app = express();
 // middleware
 app.use(requestID);
 
+// Add request-level timeouts
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 seconds
+  res.setTimeout(30000);
+  next();
+});
+
 // Configure Helmet with strict security headers
 app.use(
   helmet({
@@ -72,6 +79,7 @@ import ritualRouter from "./routes/ritual.routes";
 import switchLogRouter from "./routes/switchLog.routes";
 import analyticsRouter from "./routes/analytics.routes";
 import globalErrorHandler from "./utils/globalErrorHandler";
+import config from "./config/config";
 
 app.use("/api/v1/healthCheck", healthCheckRouter);
 app.use("/api/v1/auth", authRouter);
@@ -81,18 +89,20 @@ app.use("/api/v1/switch-logs", switchLogRouter);
 app.use("/api/v1/analytics", analyticsRouter);
 
 // Swagger API Documentation
-app.use(
-  "/api/v1/docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec, {
-    customCss: ".swagger-ui .topbar { display: none }",
-    customSiteTitle: "Context Switcher API Docs",
-  }),
-);
-app.get("/api/v1/docs.json", (_req, res) => {
-  res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
-});
+if (config.NODE_ENV !== "production") {
+  app.use(
+    "/api/v1/docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      customCss: ".swagger-ui .topbar { display: none }",
+      customSiteTitle: "Context Switcher API Docs",
+    }),
+  );
+  app.get("/api/v1/docs.json", (_req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+  });
+}
 
 // 404 catch-all route - must be after all valid routes
 app.use((req, res) => {

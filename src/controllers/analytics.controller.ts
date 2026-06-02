@@ -21,7 +21,11 @@ const getAnalytics = asyncHandler(async (req, res) => {
       });
     }
 
-    const data = await computeAnalytics({ userId: user._id, timeRange });
+    const data = await computeAnalytics({
+      userId: user._id,
+      timeRange,
+      preferences: user.preferences,
+    });
 
     return res.status(200).json(
       new ApiResponse({

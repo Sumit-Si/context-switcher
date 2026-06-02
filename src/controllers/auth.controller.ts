@@ -1,9 +1,3 @@
-import type {
-  CookieOptions,
-  CreateUserRequestBodyProps,
-  LoginUserRequestBodyProps,
-  UpdateProfileRequestBodyProps,
-} from "../types/auth.types";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/AsyncHandler";
 import { ApiResponse } from "../utils/ApiResponse";
@@ -12,6 +6,14 @@ import type { UserDocument } from "../types/common.types";
 import logger from "../config/logger";
 import { AuthService } from "../services/auth.service";
 import { generateAccessAndRefreshToken } from "../utils/tokenUtils";
+import { AUTH_CONSTANTS } from "../constants";
+import type { CookieOptions } from "../types/auth.types";
+import type {
+  RegisterUserPostValidator,
+  LoginUserPostValidator,
+  UpdateProfilePatchValidator,
+  UpdatePreferencesPatchValidator,
+} from "../validators";
 
 const authService = new AuthService();
 
@@ -23,7 +25,7 @@ const getCookieOptions = (): CookieOptions => ({
 });
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { username, email, password } = req.body as CreateUserRequestBodyProps;
+  const { username, email, password } = req.body as RegisterUserPostValidator;
   const registeredUser = await authService.register({
     username,
     email,
@@ -99,7 +101,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const userAgent = req.headers["user-agent"] ?? "unknown";
   const requestId = req.headers["x-request-id"] as string;
 
-  const { email, password } = req.body as LoginUserRequestBodyProps;
+  const { email, password } = req.body as LoginUserPostValidator;
 
   try {
     const { user, accessToken, refreshToken } = await authService.login({
@@ -118,11 +120,11 @@ const loginUser = asyncHandler(async (req, res) => {
       .status(200)
       .cookie("accessToken", accessToken, {
         ...getCookieOptions(),
-        maxAge: 15 * 60 * 1000,
+        maxAge: AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE_MAX_AGE,
       })
       .cookie("refreshToken", refreshToken, {
         ...getCookieOptions(),
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE_MAX_AGE,
       })
       .json(
         new ApiResponse({
@@ -167,7 +169,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   const updatedUser = await authService.updateProfile(
     user._id.toString(),
-    req.body as UpdateProfileRequestBodyProps,
+    req.body as UpdateProfilePatchValidator,
     avatarLocalFile?.path,
   );
 
@@ -183,6 +185,30 @@ const updateProfile = asyncHandler(async (req, res) => {
       statusCode: 200,
       data: updatedUser,
       message: "Profile updated successfully",
+    }),
+  );
+});
+
+const updatePreferences = asyncHandler(async (req, res) => {
+  const user = req.user as UserDocument;
+
+  const updatedUser = await authService.updatePreferences(
+    user._id.toString(),
+    req.body as UpdatePreferencesPatchValidator,
+  );
+
+  logger.info("Preferences updated", {
+    meta: {
+      userId: user._id.toString(),
+      requestId: req.headers["x-request-id"],
+    },
+  });
+
+  res.status(200).json(
+    new ApiResponse({
+      statusCode: 200,
+      data: updatedUser,
+      message: "Preferences updated successfully",
     }),
   );
 });
@@ -224,11 +250,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .status(200)
       .cookie("accessToken", accessToken, {
         ...getCookieOptions(),
-        maxAge: 15 * 60 * 1000,
+        maxAge: AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE_MAX_AGE,
       })
       .cookie("refreshToken", newRefreshToken, {
         ...getCookieOptions(),
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE_MAX_AGE,
       })
       .json(
         new ApiResponse({
@@ -343,11 +369,11 @@ const loginWithGoogle = asyncHandler(async (req, res) => {
 
     res.cookie("accessToken", accessToken, {
       ...getCookieOptions(),
-      maxAge: 15 * 60 * 1000,
+      maxAge: AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE_MAX_AGE,
     });
     res.cookie("refreshToken", refreshToken, {
       ...getCookieOptions(),
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE_MAX_AGE,
     });
 
     res.redirect(`${config.CLIENT_URL}/panel/dashboard`);
@@ -369,6 +395,7 @@ export {
   loginUser,
   profile,
   updateProfile,
+  updatePreferences,
   logout,
   refreshAccessToken,
   changePassword,

@@ -1,6 +1,14 @@
 import type { Types } from "mongoose";
 import type { AuthProvider } from "./auth.types";
 
+export interface PreferenceProps {
+  theme: "light" | "dark";
+  workStartHour: number;
+  workEndHour: number;
+  notifications: boolean;
+  defaultRitual: string;
+}
+
 export interface UserDocument {
   _id: Types.ObjectId;
   username: string;
@@ -8,6 +16,8 @@ export interface UserDocument {
   avatar?: string;
   avatarPublicId?: string;
   authProvider: AuthProvider;
+  preferences: PreferenceProps;
+  isEmailVerified: boolean;
 }
 
 export interface GetRequestPayloads {

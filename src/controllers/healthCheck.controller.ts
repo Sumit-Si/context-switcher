@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { getApplicationHealth, getSystemHealth } from "../utils/quicker";
 import { DB_NAME } from "../constants";
 import { asyncHandler } from "../utils/AsyncHandler";
+import { ApiResponse } from "../utils/ApiResponse";
 
 const healthCheck = asyncHandler(async (_req, res) => {
   // Check MongoDB connection status
@@ -18,31 +19,39 @@ const healthCheck = asyncHandler(async (_req, res) => {
 
   // If database is not connected, return 503
   if (!isHealthy) {
-    return res.status(503).json({
-      statusCode: 503,
-      message: "Service Unavailable - Database not connected",
-      database: {
-        status: dbStatus,
-        name: DB_NAME,
-      },
-      application: getApplicationHealth(),
-      system: getSystemHealth(),
-      timestamp: new Date().toISOString(),
-    });
+    return res.status(503).json(
+      new ApiResponse({
+        statusCode: 503,
+        message: "Service Unavailable - Database not connected",
+        data: {
+          database: {
+            status: dbStatus,
+            name: DB_NAME,
+          },
+          application: getApplicationHealth(),
+          system: getSystemHealth(),
+          timestamp: new Date().toISOString(),
+        },
+      }),
+    );
   }
 
   // Return 200 with all health metrics
-  return res.status(200).json({
-    statusCode: 200,
-    message: "All Ok!",
-    database: {
-      status: dbStatus,
-      name: DB_NAME,
-    },
-    application: getApplicationHealth(),
-    system: getSystemHealth(),
-    timestamp: new Date().toISOString(),
-  });
+  return res.status(200).json(
+    new ApiResponse({
+      statusCode: 200,
+      message: "All Ok!",
+      data: {
+        database: {
+          status: dbStatus,
+          name: DB_NAME,
+        },
+        application: getApplicationHealth(),
+        system: getSystemHealth(),
+        timestamp: new Date().toISOString(),
+      },
+    }),
+  );
 });
 
 export { healthCheck };

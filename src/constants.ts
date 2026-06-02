@@ -26,6 +26,16 @@ export const AvailableAuthProviders = Object.values(
   AuthProviderEnum,
 ) as readonly AuthProvider[];
 
+// Auth Constants
+export const AUTH_CONSTANTS = {
+  EMAIL_VERIFY_COOLDOWN_MS: 60 * 1000,
+  MAX_VERIFICATION_RESENDS: 5,
+  ACCESS_TOKEN_COOKIE_MAX_AGE: 15 * 60 * 1000,
+  REFRESH_TOKEN_COOKIE_MAX_AGE: 7 * 24 * 60 * 60 * 1000,
+  EMAIL_VERIFY_TOKEN_TTL_MS: 24 * 60 * 60 * 1000,
+  PASSWORD_RESET_TOKEN_TTL_MS: 10 * 60 * 1000,
+} as const;
+
 // Context Constants
 export const CognitiveLoadEnum = {
   LOW: "low",
