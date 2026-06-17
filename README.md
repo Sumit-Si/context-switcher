@@ -392,5 +392,5 @@ This project is licensed under the **MIT License** — see the [LICENSE](./LICEN
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/Sumit-Si">Sumit Singh Tomar</a></sub>
+  <h3>Built with ❤️ by <a href="https://github.com/Sumit-Si">Sumit Singh Tomar</a></h3>
 </div>
