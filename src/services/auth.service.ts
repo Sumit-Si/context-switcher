@@ -250,7 +250,14 @@ export class AuthService implements IAuthService {
       "_id username email avatar isEmailVerified createdAt",
     );
 
-    return { user: loggedInUser!, accessToken, refreshToken };
+    if (!loggedInUser) {
+      throw new ApiError({
+        statusCode: 500,
+        message: "Failed to retrieve user after login",
+      });
+    }
+
+    return { user: loggedInUser, accessToken, refreshToken };
   }
 
   async updateProfile(
@@ -321,7 +328,14 @@ export class AuthService implements IAuthService {
       select: "_id username email avatar isEmailVerified createdAt",
     });
 
-    return updatedUser!;
+    if (!updatedUser) {
+      throw new ApiError({
+        statusCode: 500,
+        message: "Failed to update profile",
+      });
+    }
+
+    return updatedUser;
   }
 
   async updatePreferences(
@@ -348,7 +362,14 @@ export class AuthService implements IAuthService {
       },
     );
 
-    return updatedUser!;
+    if (!updatedUser) {
+      throw new ApiError({
+        statusCode: 500,
+        message: "Failed to update preferences",
+      });
+    }
+
+    return updatedUser;
   }
 
   async logout(userId: string): Promise<void> {

@@ -1,6 +1,5 @@
 import type { UserDocument } from "../types/common.types";
 import type { TimeRange } from "../utils/analyticsEngine";
-import { computeAnalytics } from "../utils/analyticsEngine";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/AsyncHandler";
@@ -10,7 +9,10 @@ const analyticsService = new AnalyticsService();
 
 const getAnalytics = asyncHandler(async (req, res) => {
   try {
-    const { timeRange = "week" } = req.query as { timeRange: TimeRange };
+    const { timeRange = "week", timezoneOffset } = req.query as {
+      timeRange: TimeRange;
+      timezoneOffset?: string;
+    };
     const validRanges = ["day", "week", "month", "all"];
     const user = req.user as UserDocument;
 
@@ -21,10 +23,11 @@ const getAnalytics = asyncHandler(async (req, res) => {
       });
     }
 
-    const data = await computeAnalytics({
+    const data = await analyticsService.getFullAnalytics({
       userId: user._id,
       timeRange,
       preferences: user.preferences,
+      timezoneOffset: timezoneOffset ? parseInt(timezoneOffset) || 0 : 0,
     });
 
     return res.status(200).json(
@@ -34,7 +37,10 @@ const getAnalytics = asyncHandler(async (req, res) => {
         message: "Analytics computed successfully",
       }),
     );
-  } catch (_error) {
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
     throw new ApiError({
       statusCode: 500,
       message: "Problem while computing analytics",
@@ -58,8 +64,12 @@ const getSummary = asyncHandler(async (req, res) => {
 
 const getHeatmap = asyncHandler(async (req, res) => {
   const user = req.user as UserDocument;
+  const { timezoneOffset } = req.query as { timezoneOffset?: string };
 
-  const data = await analyticsService.getHeatmap(user._id.toString());
+  const data = await analyticsService.getHeatmap(
+    user._id.toString(),
+    timezoneOffset ? parseInt(timezoneOffset) || 0 : 0,
+  );
 
   res.status(200).json(
     new ApiResponse({
@@ -114,8 +124,12 @@ const getSwitchPatterns = asyncHandler(async (req, res) => {
 
 const getStreak = asyncHandler(async (req, res) => {
   const user = req.user as UserDocument;
+  const { timezoneOffset } = req.query as { timezoneOffset?: string };
 
-  const data = await analyticsService.getStreak(user._id.toString());
+  const data = await analyticsService.getStreak(
+    user._id.toString(),
+    timezoneOffset ? parseInt(timezoneOffset) || 0 : 0,
+  );
 
   res.status(200).json(
     new ApiResponse({

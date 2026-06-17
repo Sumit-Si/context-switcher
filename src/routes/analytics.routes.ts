@@ -29,6 +29,12 @@ const router = Router();
  *           enum: [day, week, month, all]
  *           default: week
  *         description: Time range for analytics
+ *       - in: query
+ *         name: timezoneOffset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Timezone offset in minutes (e.g., -330 for IST)
  *     responses:
  *       200:
  *         description: Analytics data retrieved successfully
@@ -104,6 +110,9 @@ router.route("/").get(verifyJWT, getAnalytics);
  *                         ritualCompletionRate:
  *                           type: number
  *                           example: 80.0
+ *                         totalFocusMinutes:
+ *                           type: number
+ *                           example: 120
  *                     thisWeek:
  *                       type: object
  *                       properties:
@@ -116,6 +125,9 @@ router.route("/").get(verifyJWT, getAnalytics);
  *                         ritualCompletionRate:
  *                           type: number
  *                           example: 75.5
+ *                         totalFocusMinutes:
+ *                           type: number
+ *                           example: 840
  *                     thisMonth:
  *                       type: object
  *                       properties:
@@ -128,6 +140,9 @@ router.route("/").get(verifyJWT, getAnalytics);
  *                         ritualCompletionRate:
  *                           type: number
  *                           example: 78.3
+ *                         totalFocusMinutes:
+ *                           type: number
+ *                           example: 3600
  *       401:
  *         description: Unauthorized - Invalid or missing token
  *         content:
@@ -146,6 +161,13 @@ router.route("/summary").get(verifyJWT, getSummary);
  *     tags: [Analytics]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timezoneOffset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Timezone offset in minutes (e.g., -330 for IST)
  *     responses:
  *       200:
  *         description: Heatmap data retrieved successfully

@@ -1,7 +1,7 @@
 {
   "name": "context-switcher",
   "version": "1.0.0",
-  "description": "",
+  "description": "A productivity-focused backend API for managing mental context switches with rituals, analytics, and focus tracking",
   "main": "./dist/index",
   "type": "commonjs",
   "scripts": {
@@ -21,7 +21,7 @@
   },
   "keywords": [],
   "author": "Sumit Singh Tomar",
-  "license": "ISC",
+  "license": "MIT",
   "lint-staged": {
     "*.ts": [
       "pnpm run lint:fix",

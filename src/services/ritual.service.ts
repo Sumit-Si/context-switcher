@@ -22,7 +22,7 @@ export interface CreateRitualDTO {
   };
 }
 
-export interface UpdateRitualDTO extends Partial<CreateRitualDTO> {}
+export type UpdateRitualDTO = Partial<CreateRitualDTO>;
 
 export interface IRitualService {
   getAll(
@@ -63,12 +63,7 @@ export class RitualService
     const query = { userId: new Types.ObjectId(userId), deletedAt: null };
 
     const [data, total] = await Promise.all([
-      this.model
-        .find(query)
-        .sort(sort as any)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      this.model.find(query).sort(sort).skip(skip).limit(limit).lean(),
       this.model.countDocuments(query),
     ]);
 
@@ -114,7 +109,8 @@ export class RitualService
     data: CreateRitualDTO,
     userId: string,
   ): Promise<RitualSchemaProps> {
-    const ritualData: any = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ritualData: Record<string, any> = {
       ...data,
       userId: new Types.ObjectId(userId),
     };
@@ -122,7 +118,9 @@ export class RitualService
     // Handle targetTransition - remove null values
     if (ritualData.targetTransition) {
       ritualData.targetTransition = {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         fromContext: ritualData.targetTransition.fromContext || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         toContext: ritualData.targetTransition.toContext || undefined,
       };
     }

@@ -146,20 +146,21 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-userSchema.methods.isPasswordCorrect = async function (
+userSchema.methods.isPasswordCorrect = function (
+  this: { password: string },
   password: string,
 ): Promise<boolean> {
-  return await bcrypt.compare(password, this.password);
+  return bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function (this: UserSchemaProps) {
   const secret: Secret = config.ACCESS_TOKEN_SECRET;
   const expiresIn = config.ACCESS_TOKEN_EXPIRY as SignOptions["expiresIn"];
 
   return jwt.sign({ _id: this._id.toString() }, secret, { expiresIn });
 };
 
-userSchema.methods.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function (this: UserSchemaProps) {
   const secret: Secret = config.REFRESH_TOKEN_SECRET;
   const expiresIn = config.REFRESH_TOKEN_EXPIRY as SignOptions["expiresIn"];
 

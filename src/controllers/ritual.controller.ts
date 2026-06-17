@@ -101,7 +101,8 @@ const createRitual = asyncHandler(async (req, res) => {
   logger.info("RITUAL_CREATED", {
     meta: {
       userId: user._id.toString(),
-      ritualId: (ritual as any)._id?.toString() || "unknown",
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      ritualId: String((ritual as any)._id),
       name: ritual.name,
       requestId: req.headers["x-request-id"],
     },
@@ -152,7 +153,8 @@ const updateRitualById = asyncHandler(async (req, res) => {
   logger.info("RITUAL_UPDATED", {
     meta: {
       userId: user._id.toString(),
-      ritualId: (updatedRitual as any)._id?.toString() || id,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      ritualId: String((updatedRitual as any)._id),
       requestId: req.headers["x-request-id"],
     },
   });

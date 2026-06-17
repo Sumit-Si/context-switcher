@@ -9,6 +9,14 @@ import { globalLimiter } from "./config/rateLimiter";
 import requestID from "./middlewares/requestID.middleware";
 import { swaggerSpec } from "./config/swagger";
 import "./config/passport";
+import healthCheckRouter from "./routes/healthCheck.routes";
+import authRouter from "./routes/auth.routes";
+import contextRouter from "./routes/context.routes";
+import ritualRouter from "./routes/ritual.routes";
+import switchLogRouter from "./routes/switchLog.routes";
+import analyticsRouter from "./routes/analytics.routes";
+import globalErrorHandler from "./utils/globalErrorHandler";
+import config from "./config/config";
 
 const app = express();
 
@@ -71,16 +79,7 @@ app.use(cookieParser());
 
 app.use(globalLimiter);
 
-// Custom routes
-import healthCheckRouter from "./routes/healthCheck.routes";
-import authRouter from "./routes/auth.routes";
-import contextRouter from "./routes/context.routes";
-import ritualRouter from "./routes/ritual.routes";
-import switchLogRouter from "./routes/switchLog.routes";
-import analyticsRouter from "./routes/analytics.routes";
-import globalErrorHandler from "./utils/globalErrorHandler";
-import config from "./config/config";
-
+// Routes
 app.use("/api/v1/healthCheck", healthCheckRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/contexts", contextRouter);

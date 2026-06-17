@@ -1,6 +1,7 @@
 import type { Types } from "mongoose";
 import mongoose from "mongoose";
 import SwitchLog from "../models/switchLog.model";
+import { formatTimezoneOffset } from "./timezone";
 
 // Shared base types
 export type TimeRange = "day" | "week" | "month" | "all";
@@ -17,6 +18,7 @@ export interface AnalyticsRequestParams {
   to?: Date | null;
   timeRange: TimeRange;
   preferences?: UserPreferences;
+  timezoneOffset?: number; // in minutes, e.g., -330 for IST (UTC+5:30)
 }
 
 // For internal helpers that receive a resolved date range
@@ -24,6 +26,7 @@ interface DateRangeParams {
   userId: Types.ObjectId;
   from: Date;
   to: Date;
+  timezoneOffset?: number;
 }
 
 interface DateRangeWithPrefsParams extends DateRangeParams {
@@ -53,7 +56,9 @@ interface KeyMetrics {
   averageFocusScore: number;
   totalSessions: number;
   totalContextSwitches: number;
-  ritualComplianceRate: number;
+  ritualComplianceRate: number; // Percentage of ALL switches that had a ritual completed
+  ritualSuccessRate: number; // Percentage of switches WITH rituals where ritual was completed
+  ritualImpact: number; // Focus score difference between ritual vs non-ritual sessions
   switchesWithRitual: number;
   switchesTotal: number;
 }
@@ -96,8 +101,61 @@ interface InsightInput {
   preferences?: UserPreferences;
 }
 
+// ─── Aggregate result types ──────────────────────────────
+// These describe the raw shape of MongoDB aggregate outputs
+
+interface KeyMetricsAggResult {
+  totalFocusMinutes: number;
+  totalSessions: number;
+  averageFocusScore: number;
+  switchesWithRitual: number;
+  switchesWithRitualAssigned: number;
+  focusWithRitual: number;
+  focusWithoutRitual: number;
+  switchesTotal: number;
+}
+
+interface DailyFocusAggResult {
+  _id: string;
+  avgFocus: number;
+  sessions: number;
+  focusMinutes: number;
+}
+
+interface ContextPerfAggResult {
+  _id: { toString(): string };
+  avgFocusScore: number;
+  sessions: number;
+  totalMinutes: number;
+  contextInfo: { name: string; color?: string; icon?: string };
+}
+
+interface ContextSwitchAggResult {
+  _id: { from: unknown; to: unknown };
+  count: number;
+  avgFocus: number;
+  fromCtx: { name: string; icon?: string };
+  toCtx: { name: string; icon?: string };
+}
+
+interface FocusTrendAggResult {
+  _id: number;
+  avgFocus: number;
+  sessions: number;
+  minDate: { toISOString(): string };
+}
+
+interface TimeOfDayAggResult {
+  _id: number;
+  avgFocus: number;
+  count: number;
+}
+
 // Convert timeRange string to date range
-export const getDateRange = (timeRange: TimeRange): DateRange => {
+export const getDateRange = async (
+  timeRange: TimeRange,
+  userId: Types.ObjectId,
+): Promise<DateRange> => {
   const now = new Date();
   const to = new Date(now);
   let from = new Date(now);
@@ -112,9 +170,19 @@ export const getDateRange = (timeRange: TimeRange): DateRange => {
     case "month":
       from.setMonth(now.getMonth() - 1); // 30 days ago
       break;
-    case "all":
-      from = new Date("2026-01-01"); // beginning of time
+    case "all": {
+      // Find the first log for this user
+      const firstLog = await SwitchLog.findOne({
+        userId,
+        deletedAt: null,
+      }).sort({ startTime: 1 });
+      if (firstLog) {
+        from = new Date(firstLog.startTime);
+      } else {
+        from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Default to 30 days ago
+      }
       break;
+    }
     default:
       from.setDate(now.getDate() - 7);
   }
@@ -134,9 +202,13 @@ export const computeAnalytics = async ({
   userId,
   timeRange,
   preferences,
+  timezoneOffset = 0,
 }: AnalyticsRequestParams) => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
-  const { from, to, previousFrom, previousTo } = getDateRange(timeRange);
+  const { from, to, previousFrom, previousTo } = await getDateRange(
+    timeRange,
+    userObjectId,
+  );
 
   // Run all aggregations in parallel for speed
   const [
@@ -150,11 +222,17 @@ export const computeAnalytics = async ({
   ] = await Promise.all([
     getKeyMetrics({ userId: userObjectId, from, to }),
     getKeyMetrics({ userId: userObjectId, from: previousFrom, to: previousTo }), // for % change
-    getDailyFocusData({ userId: userObjectId, from, to }),
+    getDailyFocusData({ userId: userObjectId, from, to, timezoneOffset }),
     getContextPerformance({ userId: userObjectId, from, to }),
     getContextSwitches({ userId: userObjectId, from, to }),
-    getFocusTrendData({ userId: userObjectId, from, to }),
-    getTimeOfDayData({ userId: userObjectId, from, to, preferences }),
+    getFocusTrendData({ userId: userObjectId, from, to, timezoneOffset }),
+    getTimeOfDayData({
+      userId: userObjectId,
+      from,
+      to,
+      preferences,
+      timezoneOffset,
+    }),
   ]);
 
   // Compute focus score change vs previous period
@@ -201,6 +279,7 @@ const getKeyMetrics = async ({ userId, from, to }: DateRangeParams) => {
         userId,
         startTime: { $gte: from, $lte: to },
         endTime: { $ne: null }, // only completed sessions
+        deletedAt: null,
       },
     },
     {
@@ -209,17 +288,37 @@ const getKeyMetrics = async ({ userId, from, to }: DateRangeParams) => {
         totalFocusMinutes: { $sum: "$durationInMinutes" },
         totalSessions: { $sum: 1 },
         averageFocusScore: {
-          // Only average sessions where user gave a rating
           $avg: {
             $cond: [
               { $ne: ["$focusQuality", null] },
-              { $multiply: ["$focusQuality", 20] }, // convert 1–5 to 0–100
+              { $multiply: ["$focusQuality", 20] },
               null,
             ],
           },
         },
         switchesWithRitual: {
           $sum: { $cond: [{ $eq: ["$ritualCompleted", true] }, 1, 0] },
+        },
+        switchesWithRitualAssigned: {
+          $sum: { $cond: [{ $ne: ["$ritualId", null] }, 1, 0] },
+        },
+        focusWithRitual: {
+          $avg: {
+            $cond: [
+              { $eq: ["$ritualCompleted", true] },
+              { $multiply: ["$focusQuality", 20] },
+              null,
+            ],
+          },
+        },
+        focusWithoutRitual: {
+          $avg: {
+            $cond: [
+              { $ne: ["$ritualCompleted", true] },
+              { $multiply: ["$focusQuality", 20] },
+              null,
+            ],
+          },
         },
         switchesTotal: { $sum: 1 },
       },
@@ -234,14 +333,21 @@ const getKeyMetrics = async ({ userId, from, to }: DateRangeParams) => {
       totalSessions: 0,
       totalContextSwitches: 0,
       ritualComplianceRate: 0,
+      ritualSuccessRate: 0,
+      ritualImpact: 0,
       switchesWithRitual: 0,
       switchesTotal: 0,
     };
   }
 
-  const r = result[0];
+  const r = result[0] as KeyMetricsAggResult;
   const hours = Math.floor(r.totalFocusMinutes / 60);
   const minutes = Math.round(r.totalFocusMinutes % 60);
+
+  const ritualImpact =
+    r.focusWithRitual && r.focusWithoutRitual
+      ? Math.round(r.focusWithRitual - r.focusWithoutRitual)
+      : 0;
 
   return {
     totalFocusTime: `${hours}h ${minutes}m`,
@@ -253,6 +359,13 @@ const getKeyMetrics = async ({ userId, from, to }: DateRangeParams) => {
       r.switchesTotal > 0
         ? Math.round((r.switchesWithRitual / r.switchesTotal) * 100)
         : 0,
+    ritualSuccessRate:
+      r.switchesWithRitualAssigned > 0
+        ? Math.round(
+            (r.switchesWithRitual / r.switchesWithRitualAssigned) * 100,
+          )
+        : 0,
+    ritualImpact,
     switchesWithRitual: r.switchesWithRitual,
     switchesTotal: r.switchesTotal,
   };
@@ -261,20 +374,30 @@ const getKeyMetrics = async ({ userId, from, to }: DateRangeParams) => {
 // ─────────────────────────────────────────────
 // DAILY FOCUS DATA — one row per day
 // ─────────────────────────────────────────────
-const getDailyFocusData = async ({ userId, from, to }: DateRangeParams) => {
+const getDailyFocusData = async ({
+  userId,
+  from,
+  to,
+  timezoneOffset = 0,
+}: DateRangeParams) => {
   const logs = await SwitchLog.aggregate([
     {
       $match: {
         userId,
         startTime: { $gte: from, $lte: to },
         endTime: { $ne: null },
+        deletedAt: null,
       },
     },
     {
       // Group by calendar day
       $group: {
         _id: {
-          $dateToString: { format: "%Y-%m-%d", date: "$startTime" },
+          $dateToString: {
+            format: "%Y-%m-%d",
+            date: "$startTime",
+            timezone: formatTimezoneOffset(timezoneOffset),
+          },
         },
         avgFocus: {
           $avg: {
@@ -302,7 +425,7 @@ const getDailyFocusData = async ({ userId, from, to }: DateRangeParams) => {
     "Saturday",
   ];
 
-  return logs.map((row) => {
+  return (logs as DailyFocusAggResult[]).map((row) => {
     const date = new Date(row._id);
     return {
       day: DAY_NAMES[date.getDay()],
@@ -324,6 +447,7 @@ const getContextPerformance = async ({ userId, from, to }: DateRangeParams) => {
         userId,
         startTime: { $gte: from, $lte: to },
         endTime: { $ne: null },
+        deletedAt: null,
       },
     },
     {
@@ -355,7 +479,7 @@ const getContextPerformance = async ({ userId, from, to }: DateRangeParams) => {
     { $sort: { avgFocusScore: -1 } }, // best performing first
   ]);
 
-  return logs.map((row) => {
+  return (logs as ContextPerfAggResult[]).map((row) => {
     const hours = Math.floor(row.totalMinutes / 60);
     const mins = Math.round(row.totalMinutes % 60);
     return {
@@ -382,6 +506,7 @@ const getContextSwitches = async ({ userId, from, to }: DateRangeParams) => {
         startTime: { $gte: from, $lte: to },
         fromContext: { $ne: null },
         endTime: { $ne: null },
+        deletedAt: null,
       },
     },
     {
@@ -421,7 +546,7 @@ const getContextSwitches = async ({ userId, from, to }: DateRangeParams) => {
     { $limit: 10 }, // top 10 hardest transitions
   ]);
 
-  return switches.map((sw) => {
+  return (switches as ContextSwitchAggResult[]).map((sw) => {
     const focus = Math.round(sw.avgFocus || 0);
     // Difficulty based on average focus score
     const difficulty: Difficulty =
@@ -441,18 +566,29 @@ const getContextSwitches = async ({ userId, from, to }: DateRangeParams) => {
 // ─────────────────────────────────────────────
 // FOCUS TREND DATA — weekly buckets for monthly view
 // ─────────────────────────────────────────────
-const getFocusTrendData = async ({ userId, from, to }: DateRangeParams) => {
+const getFocusTrendData = async ({
+  userId,
+  from,
+  to,
+  timezoneOffset = 0,
+}: DateRangeParams) => {
   const logs = await SwitchLog.aggregate([
     {
       $match: {
         userId,
         startTime: { $gte: from, $lte: to },
         endTime: { $ne: null },
+        deletedAt: null,
       },
     },
     {
       $group: {
-        _id: { $week: "$startTime" }, // group by ISO week number
+        _id: {
+          $week: {
+            date: "$startTime",
+            timezone: formatTimezoneOffset(timezoneOffset),
+          },
+        }, // group by ISO week number
         avgFocus: {
           $avg: {
             $cond: [
@@ -469,7 +605,7 @@ const getFocusTrendData = async ({ userId, from, to }: DateRangeParams) => {
     { $sort: { _id: 1 } },
   ]);
 
-  return logs.map((row, idx) => ({
+  return (logs as FocusTrendAggResult[]).map((row, idx) => ({
     week: `Week ${idx + 1}`,
     weekNumber: row._id,
     avgFocus: Math.round(row.avgFocus || 0),
@@ -486,6 +622,7 @@ const getTimeOfDayData = async ({
   from,
   to,
   preferences,
+  timezoneOffset = 0,
 }: DateRangeWithPrefsParams) => {
   const slots = [
     { label: "12am – 3am", start: 0, end: 3 },
@@ -505,11 +642,17 @@ const getTimeOfDayData = async ({
         startTime: { $gte: from, $lte: to },
         endTime: { $ne: null },
         focusQuality: { $ne: null },
+        deletedAt: null,
       },
     },
     {
       $group: {
-        _id: { $hour: "$startTime" },
+        _id: {
+          $hour: {
+            date: "$startTime",
+            timezone: formatTimezoneOffset(timezoneOffset),
+          },
+        },
         avgFocus: {
           $avg: { $multiply: ["$focusQuality", 20] },
         },
@@ -520,7 +663,7 @@ const getTimeOfDayData = async ({
 
   // Build a map from hour → avgFocus
   const hourMap: Record<number, number> = {};
-  results.forEach((r) => {
+  (results as TimeOfDayAggResult[]).forEach((r) => {
     hourMap[r._id] = Math.round(r.avgFocus);
   });
 
@@ -591,22 +734,22 @@ const generateInsights = ({
     });
   }
 
-  // Insight 2: Ritual compliance
-  if (keyMetrics.ritualComplianceRate < 50) {
+  // Insight 2: Ritual compliance & Impact
+  if (keyMetrics.ritualImpact > 10) {
+    insights.push({
+      type: "success",
+      icon: "🚀",
+      title: "Rituals are Working",
+      description: `Sessions with rituals score ${keyMetrics.ritualImpact}% higher than those without. You're ${keyMetrics.ritualSuccessRate}% consistent with assigned rituals.`,
+      action: "See impact",
+    });
+  } else if (keyMetrics.ritualComplianceRate < 50) {
     insights.push({
       type: "warning",
       icon: "🔔",
       title: "Low Ritual Usage",
       description: `You only used rituals on ${keyMetrics.ritualComplianceRate}% of switches. Ritual switches score 20-35% higher on average.`,
       action: "Start a ritual",
-    });
-  } else if (keyMetrics.ritualComplianceRate >= 80) {
-    insights.push({
-      type: "success",
-      icon: "🎯",
-      title: "Ritual Master",
-      description: `${keyMetrics.ritualComplianceRate}% ritual compliance this period. You're building a strong focus habit.`,
-      action: "See rituals",
     });
   }
 
@@ -636,16 +779,13 @@ const generateInsights = ({
     }
   }
 
-  // Insight 5: Work-Life Balance (New Smart Insight)
+  // Insight 5: Work-Life Balance
   if (preferences) {
-    // We could add logic here to detect if focus is higher outside work hours
-    // or if the user is working too late.
-    // For now, let's just acknowledge their custom work hours.
     insights.push({
       type: "tip",
       icon: "⏰",
       title: "Optimized for Your Schedule",
-      description: `Analytics are now tuned to your ${preferences.workStartHour}:00 – ${preferences.workEndHour}:00 work day.`,
+      description: `Analytics are tuned to your ${preferences.workStartHour}:00 – ${preferences.workEndHour}:00 work day.`,
       action: "Update hours",
     });
   }

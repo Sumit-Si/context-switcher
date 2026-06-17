@@ -17,7 +17,7 @@ export interface CreateContextDTO {
   environmentNote?: string;
 }
 
-export interface UpdateContextDTO extends Partial<CreateContextDTO> {}
+export type UpdateContextDTO = Partial<CreateContextDTO>;
 
 export interface IContextService {
   getAll(
@@ -60,15 +60,13 @@ export class ContextService
     userId: string,
     excludeId?: string,
   ): Promise<boolean> {
-    const query: any = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const query: Record<string, any> = {
       name,
       userId: new Types.ObjectId(userId),
       deletedAt: null,
+      ...(excludeId ? { _id: { $ne: new Types.ObjectId(excludeId) } } : {}),
     };
-
-    if (excludeId) {
-      query._id = { $ne: new Types.ObjectId(excludeId) };
-    }
 
     const existing = await this.model.findOne(query).select("_id");
     return !!existing;
@@ -90,12 +88,7 @@ export class ContextService
     const query = { userId: new Types.ObjectId(userId), deletedAt: null };
 
     const [data, total] = await Promise.all([
-      this.model
-        .find(query)
-        .sort(sort as any)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      this.model.find(query).sort(sort).skip(skip).limit(limit).lean(),
       this.model.countDocuments(query),
     ]);
 

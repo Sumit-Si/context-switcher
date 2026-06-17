@@ -79,15 +79,19 @@ const gracefulShutdown = async (signal: string) => {
 };
 
 // Register signal handlers
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => {
+  void gracefulShutdown("SIGTERM");
+});
+process.on("SIGINT", () => {
+  void gracefulShutdown("SIGINT");
+});
 
 // Handle uncaught exceptions
 process.on("uncaughtException", (error) => {
   logger.error("Uncaught Exception", {
     meta: { error, timestamp: new Date().toISOString() },
   });
-  gracefulShutdown("UNCAUGHT_EXCEPTION");
+  void gracefulShutdown("UNCAUGHT_EXCEPTION");
 });
 
 // Handle unhandled promise rejections
@@ -95,7 +99,7 @@ process.on("unhandledRejection", (reason) => {
   logger.error("Unhandled Rejection", {
     meta: { reason, timestamp: new Date().toISOString() },
   });
-  gracefulShutdown("UNHANDLED_REJECTION");
+  void gracefulShutdown("UNHANDLED_REJECTION");
 });
 
 dbConnect()
@@ -118,9 +122,9 @@ dbConnect()
       });
     });
   })
-  .catch((error) => {
+  .catch((error: unknown) => {
     logger.error("SERVER_DB_CONNECTION_ERROR", {
-      meta: error,
+      meta: error instanceof Error ? error.message : String(error),
     });
     process.exit(1);
   });

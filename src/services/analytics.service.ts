@@ -1,10 +1,41 @@
 import { Types } from "mongoose";
 import SwitchLog from "../models/switchLog.model";
+import { formatTimezoneOffset } from "../utils/timezone";
+
+// Aggregate result types for MongoDB pipelines
+interface SwitchStatsResult {
+  totalSwitches: number;
+  avgFocusQuality: number;
+  totalFocusMinutes: number;
+  ritualsCompleted: number;
+  ritualsTotal: number;
+}
+
+interface ContextUsageResult {
+  contextId: string;
+  contextName: string;
+  totalTimeMinutes: number;
+  switchCount: number;
+  avgFocus: number;
+}
+
+interface FocusByContextResult {
+  contextId: string;
+  contextName: string;
+  avgFocus: number;
+}
+
+interface StreakDayResult {
+  _id: string;
+}
+import type { AnalyticsRequestParams } from "../utils/analyticsEngine";
+import { computeAnalytics } from "../utils/analyticsEngine";
 
 export interface DailySummary {
   totalSwitches: number;
   avgFocusQuality: number;
   ritualCompletionRate: number;
+  totalFocusMinutes: number;
 }
 
 export interface PeriodSummary {
@@ -24,15 +55,25 @@ export interface ContextUsage {
   contextName: string;
   totalTimeMinutes: number;
   switchCount: number;
+  avgFocus: number;
 }
 
 export interface SwitchPattern {
   fromContext: string;
   toContext: string;
   count: number;
+  avgFocus: number;
 }
 
 export class AnalyticsService {
+  /**
+   * Comprehensive analytics including insights, trends, and performance metrics.
+   * Offloads complex calculations from the frontend.
+   */
+  getFullAnalytics(params: AnalyticsRequestParams) {
+    return computeAnalytics(params);
+  }
+
   /**
    * Get summary statistics for today, this week, and this month
    * @param userId - User ID to filter by
@@ -40,15 +81,18 @@ export class AnalyticsService {
    */
   async getSummary(userId: string): Promise<PeriodSummary> {
     const now = new Date();
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
+
+    // Start of today in UTC
+    const startOfToday = new Date(now);
+    startOfToday.setUTCHours(0, 0, 0, 0);
+
+    // Start of week (Sunday)
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfWeek.setUTCDate(now.getUTCDate() - now.getUTCDay());
+    startOfWeek.setUTCHours(0, 0, 0, 0);
+
+    // Start of month
+    const startOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1);
 
     const [today, thisWeek, thisMonth] = await Promise.all([
       this.calculateSummary(userId, startOfToday),
@@ -61,9 +105,6 @@ export class AnalyticsService {
 
   /**
    * Calculate summary statistics for a given time period
-   * @param userId - User ID to filter by
-   * @param startDate - Start date for the period
-   * @returns Daily summary with total switches, avg focus quality, and ritual completion rate
    */
   private async calculateSummary(
     userId: string,
@@ -77,6 +118,7 @@ export class AnalyticsService {
           userId: userIdObj,
           startTime: { $gte: startDate },
           deletedAt: null,
+          endTime: { $ne: null },
         },
       },
       {
@@ -84,6 +126,7 @@ export class AnalyticsService {
           _id: null,
           totalSwitches: { $sum: 1 },
           avgFocusQuality: { $avg: "$focusQuality" },
+          totalFocusMinutes: { $sum: "$durationInMinutes" },
           ritualsCompleted: {
             $sum: { $cond: ["$ritualCompleted", 1, 0] },
           },
@@ -99,10 +142,11 @@ export class AnalyticsService {
         totalSwitches: 0,
         avgFocusQuality: 0,
         ritualCompletionRate: 0,
+        totalFocusMinutes: 0,
       };
     }
 
-    const stats = switchStats[0];
+    const stats = switchStats[0] as SwitchStatsResult;
     const ritualCompletionRate =
       stats.ritualsTotal > 0
         ? (stats.ritualsCompleted / stats.ritualsTotal) * 100
@@ -112,16 +156,19 @@ export class AnalyticsService {
       totalSwitches: stats.totalSwitches,
       avgFocusQuality: Math.round((stats.avgFocusQuality || 0) * 10) / 10,
       ritualCompletionRate: Math.round(ritualCompletionRate * 10) / 10,
+      totalFocusMinutes: stats.totalFocusMinutes || 0,
     };
   }
 
   /**
    * Get heatmap data showing switch counts by hour and day of week
-   * @param userId - User ID to filter by
-   * @returns Array of heatmap data with hour, dayOfWeek, and count
+   * Handles timezone offset to ensure the heatmap aligns with user's local time.
    */
-  async getHeatmap(userId: string): Promise<HeatmapData[]> {
+  async getHeatmap(userId: string, timezoneOffset = 0): Promise<HeatmapData[]> {
     const userIdObj = new Types.ObjectId(userId);
+
+    // Convert minutes to Mongo timezone format
+    const timezone = formatTimezoneOffset(timezoneOffset);
 
     const heatmap = await SwitchLog.aggregate([
       {
@@ -132,8 +179,8 @@ export class AnalyticsService {
       },
       {
         $project: {
-          hour: { $hour: "$startTime" },
-          dayOfWeek: { $dayOfWeek: "$startTime" },
+          hour: { $hour: { date: "$startTime", timezone } },
+          dayOfWeek: { $dayOfWeek: { date: "$startTime", timezone } },
         },
       },
       {
@@ -158,13 +205,11 @@ export class AnalyticsService {
       },
     ]);
 
-    return heatmap;
+    return heatmap as HeatmapData[];
   }
 
   /**
-   * Get top 5 most used and least used contexts
-   * @param userId - User ID to filter by
-   * @returns Object with mostUsed and leastUsed context arrays
+   * Get top contexts with focus performance
    */
   async getTopContexts(
     userId: string,
@@ -184,6 +229,7 @@ export class AnalyticsService {
           _id: "$toContext",
           totalTimeMinutes: { $sum: "$durationInMinutes" },
           switchCount: { $sum: 1 },
+          avgFocus: { $avg: "$focusQuality" },
         },
       },
       {
@@ -203,6 +249,7 @@ export class AnalyticsService {
           contextName: "$context.name",
           totalTimeMinutes: 1,
           switchCount: 1,
+          avgFocus: { $round: ["$avgFocus", 1] },
         },
       },
       {
@@ -210,16 +257,16 @@ export class AnalyticsService {
       },
     ]);
 
-    const mostUsed = contextStats.slice(0, 5);
-    const leastUsed = contextStats.slice(-5).reverse();
+    const mostUsed = (contextStats as ContextUsageResult[]).slice(0, 5);
+    const leastUsed = (contextStats as ContextUsageResult[])
+      .slice(-5)
+      .reverse();
 
     return { mostUsed, leastUsed };
   }
 
   /**
    * Get average focus quality by context
-   * @param userId - User ID to filter by
-   * @returns Array of contexts with their average focus quality
    */
   async getAvgFocusByContext(
     userId: string,
@@ -265,13 +312,11 @@ export class AnalyticsService {
       },
     ]);
 
-    return focusStats;
+    return focusStats as FocusByContextResult[];
   }
 
   /**
-   * Get top 10 switch patterns (from context -> to context transitions)
-   * @param userId - User ID to filter by
-   * @returns Array of switch patterns with count
+   * Get switch patterns with impact on focus
    */
   async getSwitchPatterns(userId: string): Promise<SwitchPattern[]> {
     const userIdObj = new Types.ObjectId(userId);
@@ -291,6 +336,7 @@ export class AnalyticsService {
             to: "$toContext",
           },
           count: { $sum: 1 },
+          avgFocus: { $avg: "$focusQuality" },
         },
       },
       {
@@ -320,6 +366,7 @@ export class AnalyticsService {
           fromContext: "$fromCtx.name",
           toContext: "$toCtx.name",
           count: 1,
+          avgFocus: { $round: ["$avgFocus", 1] },
         },
       },
       {
@@ -330,20 +377,18 @@ export class AnalyticsService {
       },
     ]);
 
-    return patterns;
+    return patterns as SwitchPattern[];
   }
 
   /**
-   * Get current and longest ritual completion streak
-   * @param userId - User ID to filter by
-   * @returns Object with currentStreak and longestStreak
+   * Get current and longest streak of ritual completions
    */
   async getStreak(
     userId: string,
+    timezoneOffset = 0,
   ): Promise<{ currentStreak: number; longestStreak: number }> {
     const userIdObj = new Types.ObjectId(userId);
 
-    // Get all days with completed rituals
     const completedDays = await SwitchLog.aggregate([
       {
         $match: {
@@ -355,62 +400,72 @@ export class AnalyticsService {
       {
         $group: {
           _id: {
-            year: { $year: "$startTime" },
-            month: { $month: "$startTime" },
-            day: { $dayOfMonth: "$startTime" },
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$startTime",
+              timezone: formatTimezoneOffset(timezoneOffset),
+            },
           },
         },
       },
-      {
-        $sort: { "_id.year": -1, "_id.month": -1, "_id.day": -1 },
-      },
+      { $sort: { _id: -1 } }, // Newest first
     ]);
 
     if (completedDays.length === 0) {
       return { currentStreak: 0, longestStreak: 0 };
     }
 
-    // Calculate streaks
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setUTCDate(today.getUTCDate() - 1);
+
+    const dates = (completedDays as StreakDayResult[]).map(
+      (d) => new Date(d._id),
+    );
+
     let currentStreak = 0;
     let longestStreak = 0;
-    let tempStreak = 1;
+    let tempStreak = 0;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Check if streak is active (did ritual today or yesterday)
+    const latestDate = dates[0];
+    latestDate.setUTCHours(0, 0, 0, 0);
 
-    for (let i = 0; i < completedDays.length; i++) {
-      const day = completedDays[i]._id;
-      const date = new Date(day.year, day.month - 1, day.day);
+    const isStreakActive = latestDate >= yesterday;
 
+    // Calculate all-time longest streak
+    for (let i = 0; i < dates.length; i++) {
       if (i === 0) {
-        const diffDays = Math.floor(
-          (today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+        tempStreak = 1;
+      } else {
+        const diff = Math.round(
+          (dates[i - 1].getTime() - dates[i].getTime()) / (1000 * 60 * 60 * 24),
         );
-        if (diffDays <= 1) {
-          currentStreak = 1;
-        }
-      }
-
-      if (i > 0) {
-        const prevDay = completedDays[i - 1]._id;
-        const prevDate = new Date(prevDay.year, prevDay.month - 1, prevDay.day);
-        const diffDays = Math.floor(
-          (prevDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
-        if (diffDays === 1) {
+        if (diff === 1) {
           tempStreak++;
-          if (i === 1 && currentStreak > 0) {
-            currentStreak = tempStreak;
-          }
         } else {
           longestStreak = Math.max(longestStreak, tempStreak);
           tempStreak = 1;
         }
       }
     }
+    longestStreak = Math.max(longestStreak, tempStreak);
 
-    longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
+    // Calculate current streak
+    if (isStreakActive) {
+      currentStreak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const diff = Math.round(
+          (dates[i - 1].getTime() - dates[i].getTime()) / (1000 * 60 * 60 * 24),
+        );
+        if (diff === 1) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
 
     return { currentStreak, longestStreak };
   }

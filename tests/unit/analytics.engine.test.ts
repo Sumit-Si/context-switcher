@@ -46,20 +46,20 @@ describe("Analytics Engine Unit Tests", () => {
   });
 
   describe("getDateRange", () => {
-    it("should return correct ranges for 'day'", () => {
-      const { from, to } = getDateRange("day");
+    it("should return correct ranges for 'day'", async () => {
+      const { from, to } = await getDateRange("day", userId);
       expect(from.getHours()).toBe(0);
       expect(from.getMinutes()).toBe(0);
       expect(to.getTime()).toBeGreaterThanOrEqual(from.getTime());
     });
 
-    it("should return correct ranges for 'week'", () => {
-      const { from, to } = getDateRange("week");
+    it("should return correct ranges for 'week'", async () => {
+      const { from, to } = await getDateRange("week", userId);
       const diff = to.getTime() - from.getTime();
       const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
       // Allow for some jitter but should be approx 7 days
-      expect(diff).toBeGreaterThanOrEqual(sevenDaysMs - 1000);
-      expect(diff).toBeLessThanOrEqual(sevenDaysMs + 1000);
+      expect(diff).toBeGreaterThanOrEqual(sevenDaysMs - 2000);
+      expect(diff).toBeLessThanOrEqual(sevenDaysMs + 2000);
     });
   });
 

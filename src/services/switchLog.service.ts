@@ -260,7 +260,7 @@ export class SwitchLogService
     const [data, total] = await Promise.all([
       this.model
         .find(query)
-        .sort(sort as any)
+        .sort(sort)
         .skip(skip)
         .limit(limit)
         .populate("fromContext", "name color icon")

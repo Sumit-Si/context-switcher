@@ -25,12 +25,13 @@ export abstract class BaseService<T> {
     this.model = model;
   }
 
-  protected async findById(id: string, userId: string): Promise<T | null> {
+  protected findById(id: string, userId: string): Promise<T | null> {
     return this.model
       .findOne({
         _id: id,
         userId,
         deletedAt: null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       .lean();
   }
@@ -58,7 +59,8 @@ export abstract class BaseService<T> {
       sortOrder = "desc",
     } = options;
     const skip = (page - 1) * limit;
-    const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sort: any = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
     return { skip, limit, sort };
   }

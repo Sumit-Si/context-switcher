@@ -98,7 +98,8 @@ const createContext = asyncHandler(async (req, res) => {
   logger.info("Context created", {
     meta: {
       userId: user._id.toString(),
-      contextId: (context as any)?.toString() || "unknown",
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      contextId: String((context as any)._id),
       name: context.name,
       requestId: req.headers["x-request-id"],
     },

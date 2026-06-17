@@ -41,7 +41,7 @@ const dbConnect = async () => {
       });
     });
 
-    connection.on("error", (error) => {
+    connection.on("error", (error: Error) => {
       logger.error("MongoDB connection error", {
         meta: { error, timestamp: new Date().toISOString() },
       });

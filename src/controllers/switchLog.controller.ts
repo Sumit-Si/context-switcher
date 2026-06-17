@@ -95,7 +95,8 @@ const createSwitchLog = asyncHandler(async (req, res) => {
   logger.info("SWITCH_LOG_CREATED", {
     meta: {
       userId: user._id.toString(),
-      switchLogId: (switchLog as any)._id?.toString() || "unknown",
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      switchLogId: String((switchLog as any)._id),
       requestId: req.headers["x-request-id"],
     },
   });

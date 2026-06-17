@@ -12,8 +12,9 @@ export interface DecodedJWTPayload extends JwtPayload {
 }
 
 const verifyJWT = asyncHandler(async (req, _res, next) => {
-  const token =
-    req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+  const token: string | undefined =
+    (req.cookies as Record<string, string> | undefined)?.accessToken ||
+    req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     throw new ApiError({ statusCode: 401, message: "Unauthorized!" });

@@ -23,7 +23,7 @@ class ApiError extends Error {
   public readonly errors: ErrorDetail[];
   public readonly data: null = null;
   public readonly code?: string;
-  public readonly success: false = false;
+  public readonly success = false as const;
 
   constructor({
     statusCode,
